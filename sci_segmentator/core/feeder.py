@@ -61,7 +61,6 @@ class ImageFeeder(tf.keras.utils.Sequence):
 
         if self.augmentation is not None:
             X, y = self.augmentation(X, y)
-
         if self.preprocessing is not None:
             X, y = self.preprocessing(X, y)
 
