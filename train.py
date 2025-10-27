@@ -10,9 +10,14 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCh
 
 # import of custom function and files
 from sci_segmentator.core.utils import _get_gpu_report
+from sci_segmentator.core.utils import _set_random_seed
+from sci_segmentator.core.utils import _set_accelerator
+
 from sci_segmentator.core.feeder import ImageFeeder
 from sci_segmentator.core.losses import tversky_loss, dice_coeff
 from sci_segmentator.core.augmentation import DataAugmentation
+
+from sci_segmentator.core.unet import get_base_model
 
 from datetime import datetime
 
@@ -26,13 +31,15 @@ LOG_LEVELS = {
 
 def parse_args():
 
+    # TODO add docstrings
+
     parser = argparse.ArgumentParser()
     _ = parser.add_argument(
                             '--datafile',
                             dest='datafile',
                             type=str,
                             action='store',
-                            required=False,
+                            required=True,
                             default=None)
 
     _ = parser.add_argument(
@@ -40,7 +47,7 @@ def parse_args():
                             dest='image_path',
                             type=str,
                             action='store',
-                            required=False,
+                            required=True,
                             default=None)
     _ = parser.add_argument(
                             '--wpath',
@@ -54,7 +61,7 @@ def parse_args():
                             dest='output',
                             type=str,
                             action='store',
-                            required=False,
+                            required=True,
                             default=None)
     _ = parser.add_argument(
                             '--batch',
@@ -102,10 +109,39 @@ def parse_args():
                             required=False,
                             default=4.)
 
+    _ = parser.add_argument(
+                            "-s",
+                            "--size",
+                            dest="size",
+                            type=int,
+                            action="store",
+                            required=False,
+                            default=256,
+                            help="Image size. A model processing and image of size sizexsize will be instantiate.")
+    # TODO add accelerator control argument
+    _ = parser.add_argument(
+                            "-a",
+                            "--accelerator",
+                            dest="accelerator",
+                            type=str,
+                            action="store",
+                            required=False,
+                            default="gpu",
+                            choices=["cpu", "gpu"],
+                            help="Specify which accelerator use (GPU or CPU). If GPU not availble but specified, it will automatically switch to CPU modality.")
+    _ = parser.add_argument(
+                            "-rs",
+                            "--seed",
+                            dest="random_seed",
+                            type=str,
+                            action="store",
+                            required=False,
+                            default=None,
+                            help="Random seed to set. If specified, ensure result reproducibility"
+    )
+    # TODO add verbosity control
 
-    # todo: add image size argument
-    # todo: add accelerator control argument
-    # todo: add random seed selector
+
     args = parser.parse_args()
 
     return args
@@ -124,13 +160,22 @@ def main():
         "volume_thr": args.volume_threshold,
         "starting_model": args.wpath,
         "image_path": args.image_path,
-        "training dataset fraction": args.tfraction
+        "training dataset fraction": args.tfraction,
+        "random seed": args.random_seed,
+        "accelerator": args.accelerator
     }
 
     # setting log level to control output verbosity
     log_level = LOG_LEVELS[2]#[min(args.verbosity, max(log_levels.keys()))]
     log_format = '%(asctime)s - %(name)s -  %(levelname)s - %(message)s'
     logging.basicConfig(level=log_level, format=log_format)
+
+    if args.random_seed is not None:
+        logging.info(f"Set Randomseed to {args.random_seed}")
+        _ = _set_random_seed(args.random_seed)
+
+    logging.info(f"Setting accelerator to: {args.accelerator}")
+    _ = _set_accelerator(args.accelerator)
 
     print("Training configuration:")
     for k, v in config.items():
@@ -152,18 +197,18 @@ def main():
     unique_partecipants = df.PartecipantId.unique()
     _ = np.random.shuffle(unique_partecipants)
     logging.info(f"Found {len(unique_partecipants)} unique partecipants")
-    tindex = np.round(args.tfraction * len(unique_partecipants))
-    TRAIN_PATIENTIS = unique_partecipants[:tindex]
+    tindex = int(np.round(args.tfraction * len(unique_partecipants)))
+    TRAIN_PATIENTS = unique_partecipants[:tindex]
     VAL_PATIENTS = unique_partecipants[tindex:]
-    train_imgs = df.loc[df.PartecipantId.isin(TRAIN_PATIENTIS)].ImageName.values
-    val_imgs = df.loc[df.PartecipantId.isin(VAL_PATIENTIS)].ImageName.values
+    train_imgs = df.loc[df.PartecipantId.isin(TRAIN_PATIENTS)].ImageName.values
+    val_imgs = df.loc[df.PartecipantId.isin(VAL_PATIENTS)].ImageName.values
 
-    train_img_paths = list(map(lambda x: os.path.join(args.image_path, 'flair', f'{x}.nii.gz'), train_imgs))#, os.path.join(args.image_path, 't1_75', f'{x}.nii')], train_imgs))
-    train_lab_paths = list(map(lambda x: os.path.join(args.image_path, 'labels', f'{x}.nii.gz'), train_imgs))
+    train_img_paths = list(map(lambda x: os.path.join(args.image_path, 'flair', f'{x}.nii'), train_imgs))#, os.path.join(args.image_path, 't1_75', f'{x}.nii')], train_imgs))
+    train_lab_paths = list(map(lambda x: os.path.join(args.image_path, 'labels', f'{x}.nii'), train_imgs))
     logging.info(f"Found a total of {len(train_img_paths)} training images")
 
-    val_img_paths = list(map(lambda x: os.path.join(args.image_path, 'flair', f'{x}.nii.gz'), val_imgs))#, os.path.join(args.image_path, 't1_75', f'{x}.nii')], train_imgs))
-    val_lab_paths = list(map(lambda x: os.path.join(args.image_path, 'labels', f'{x}.nii.gz'), val_imgs))
+    val_img_paths = list(map(lambda x: os.path.join(args.image_path, 'flair', f'{x}.nii'), val_imgs))#, os.path.join(args.image_path, 't1_75', f'{x}.nii')], train_imgs))
+    val_lab_paths = list(map(lambda x: os.path.join(args.image_path, 'labels', f'{x}.nii'), val_imgs))
     logging.info(f"Found a total of {len(val_img_paths)} validation images")
     
 
@@ -183,20 +228,22 @@ def main():
             print(f"\t\t -{kk}: {vv}")
 
 
-    train_feeder = ImageFeeder(flr_paths=train_img_paths,
-                               tar_paths=train_lab_paths,
-                               t1w_paths=None,
-                               batch_size=args.batch,
-                               preprocessing=None,
-                               augmentation=augmentation,
-                               shuffle=True)
+    train_feeder = ImageFeeder(
+                            flr_paths=train_img_paths[:64],
+                            tar_paths=train_lab_paths[:64],
+                            t1w_paths=None,
+                            batch_size=args.batch,
+                            preprocessing=None,
+                            augmentation=augmentation,
+                            shuffle=True)
 
-    val_feeder = ImageFeeder(flr_paths=val_img_paths,
-                              tar_paths=val_lab_paths,
-                              t1w_paths=None,
-                              preprocessing=None,
-                              shuffle=False,
-                              batch_size=1)
+    val_feeder = ImageFeeder(
+                            flr_paths=val_img_paths[:8],
+                            tar_paths=val_lab_paths[:8],
+                            t1w_paths=None,
+                            preprocessing=None,
+                            shuffle=False,
+                            batch_size=1)
 
     outpath = os.path.join(args.output, datetime.today().strftime("%Y_%m_%d_%H_%M_%S"))
     print("Model Instantiation")
@@ -204,9 +251,9 @@ def main():
     callbacks = [
                 ReduceLROnPlateau(monitor='val_loss', patience=10, factor=0.1),
                 EarlyStopping( monitor='val_loss', patience=15),#]
-                ModelCheckpoint(os.path.join(outpath, 'ckp'), monitor="val_dice_coeff", save_best_only=True, save_weights_only=True)]
+                ModelCheckpoint(os.path.join(outpath, 'ckp', "ckp.weights.h5"), monitor="val_dice_coeff",  mode="max", save_best_only=True, save_weights_only=True)]
     
-    model = get_base_model((256, 256, 1), args.wpath)
+    model = get_base_model((args.size, args.size, 1), args.wpath)
 
     model.compile(
         optimizer=tf.keras.optimizers.Adam(learning_rate=args.lr, clipnorm=1e-5),
@@ -229,7 +276,7 @@ def main():
     df = pd.DataFrame.from_dict(history.history)
     df.to_csv(os.path.join(outpath, 'history.csv'), sep=',', index=None)
 
-    model.save_weights(filepath=os.path.join(outpath, 'weights.h5'))
+    model.save_weights(filepath=os.path.join(outpath, 'w.weights.h5'))
     
 
 if __name__ == "__main__":
