@@ -15,14 +15,14 @@
 
 # Silent Cerebral Infarction Segmentator
 
-- [Silent Cerebral Infarction Segmentator](#silent-cerebral-infarction-segemtator)
+- [Silent Cerebral Infarction Segmentator](#silent-cerebral-infarction-segmentator)
   - [Overview](#overview)
   - [Installation](#installation)
+    - [Requirements](#requirements)
+    - [Installation Configuration](#installation-configuration)
   - [Getting Started](#getting-started)
     - [Segmentation](#segmentation)
-    - [Re-Training](#re-traning)
-  - [License](#license)
-  - [Contribute](#contribute)
+    - [Re-Traning](#re-traning)
   - [Authors](#authors)
   - [Citation](#citation)
 
@@ -106,11 +106,11 @@ Here the full structure:
 
 Then, modify the `config.yaml` by adding the path to the each study folder to process under the `samples` field: 
 ```yaml
-ensamble_0: "fixtures/volcanic-serenity-119/weights.h5"
-ensamble_1: "fixtures/toasty-jazz-115/weights.h5"
-ensamble_2: "fixtures/denim-flower-118/weights.h5"
-ensamble_3: "fixtures/rare-galaxy-113/weights.h5"
-ensamble_4: "fixtures/prime-terrain-112/weights.h5"
+ensamble_0: "fixtures/ensamble_0.h5"
+ensamble_1: "fixtures/ensamble_1.h5"
+ensamble_2: "fixtures/ensamble_2.h5"
+ensamble_3: "fixtures/ensamble_3.h5"
+ensamble_4: "fixtures/ensamble_4.h5"
 
 samples: [
   "/path/to/study-1",
@@ -124,7 +124,7 @@ Now you are ready to run the segmentation; all the results (final and intermedia
 
 ```bash
 conda activate snakemake
-snakemake -jN --use-conda --rerun-incomplete
+snakemake -jN --use-conda --rerun-incomplete --configfile "/path/to/your/configfile.yaml"
 ```
 
 where `N` indicates the number of process to run in parallel.
@@ -133,6 +133,64 @@ Please notice that the first run could take several time because of the creation
 
 ### Re-Traning
 
+It is possible to fine tune the provided ensamble, as weel as retrain the network from scratch. 
+The retraining is poerfromed by the  ```train.py``` script.
+The data must be preprocessed and organized as follows:
+
+```
+/path/to/data_folder
+    | flair
+        |
+        study_1_XXX.nii.gz
+        study_1_XXY.nii.gz
+        study_1_XXZ.nii.gz
+    | labels
+        |
+        study_1_XXX.nii.gz
+        study_1_XXY.nii.gz
+        study_1_XXZ.nii.gz
+    | datafile.csv
+```
+Where, sudy_1_XXX.nii.gz is the XXX slice of the study 1 image, in axial direction. 
+In flair folder must stored the slices from flair image, while in labels folder the corresponding ground truth images.
+Each image must be in 
+
+The *datafile.csv* is a csv file containing slice informations.
+It MUST be in this format:
+```csv
+ImageName, PartecipantId, Volume(#Voxels)
+study_1_XXX, study_1, 0
+study_1_XXY, study_1, 4
+study_1_XXZ, study_1, 5
+study_2_XXX, study_2, 0
+study_2_XXY, study_2, 1
+study_2_XXZ, study_2, 0
+
+```
+
+Where, *ImageName* is the name of the slice file, whithout its extension.
+*PartecipantId* is the Id of the partecipant where the slice is taken.
+*Volume(#Voxels)* is the number of lesion voxels present in the slice.
+
+Once you have created and populated the folder structure, run the training by the following command:
+```bash
+python train.py --datafile="/path/to/data_folder/datafile.csv" --image_path="/path/to/data_folder" --output="/path/to/output/folder"
+```
+
+It is also possible to customize the training by adding the following options
+
+| **Option** | **Default** | **Description** |
+|:----------:|:-----------:|:---------------:|
+| wpath      | None        | Path to existing weights to retrain. Must be .h5 format|
+| batch      | 8           | Batch size to use for the training |
+| epochs     | 200         | Max Number of training epochs  |
+| lr         | 1e-3        | Starting Learning Rate |
+| tfractio   | .7          | Fraction of the data to use for the training. The remaining will be used as validation set |
+| volume_thr | 4           | Volume to use as threshold. Only the images with a number of lesion voxel greater that volume_thr will be used for the training |
+| size       | 256         | Size of the input image |
+| accelerator | gpu        | Accelerator to use for training. cpu and gpu options available |
+| seed      | None         | if specified, set the random seed to specified value, to ensure reproducibility |
+
 
 ## Authors
 
@@ -140,17 +198,8 @@ Please notice that the first run could take several time because of the creation
 
 <img src="https://www.unibo.it/uniboweb/utils/UserImage.aspx?IdAnagrafica=863087&IdFoto=d16dc4d7" style="width:25px; height:25px; border-radius:50%;"> **Nicolas Biondini** [github](https://github.com/bionano94),  [unibo](https://www.unibo.it/sitoweb/nicolas.biondini2)
 
+
 ## Citation
 
 If you have found this tool useful for your research, please consider citing the original paper.
 
-```BibTeX
-@misc{catopuma,
-  author = {Biondi, Riccardo},
-  title = {CATOPUMA - Customizable Advanced Tensorflow Objects to Preprocess, Upload, Model and Augment},
-  year = {2023},
-  publisher = {GitHub},
-  howpublished = {\url{https://github.com/RiccardoBiondi/Catopuma}},
-}
-
-```
