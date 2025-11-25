@@ -1,0 +1,4 @@
+gui:
+  theme: "DarkBlue"
+  window_size: [1280, 720]
+  remember_last_folder: true

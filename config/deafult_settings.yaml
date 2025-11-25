@@ -1,0 +1,8 @@
+segmenter:
+  threshold: 0.5
+  model_path: "models/model_v1.pth"
+  postprocess: true
+
+io:
+  default_input_dir: "data/examples"
+  default_output_dir: "data/outputs"
