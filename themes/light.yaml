@@ -1,0 +1,15 @@
+name: "light"
+background: "#ffffff"
+text: "#1E3A72"
+button_background: "#1E3A72"
+button_text: "#16D8D8"
+accent: "#EB2282"
+input_background: "##ffffff"
+input_text: "#1E3A72"
+
+
+
+# rosso EB2282
+# text 1E3A72
+# turchese 16D8D8
+# bianco FFFFFF
