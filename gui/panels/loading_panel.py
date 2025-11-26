@@ -57,3 +57,32 @@ class LoadingPanel:
         ]
 
         return layout
+    
+
+
+
+
+'''
+ while True:
+        event, values = window.read()
+
+        if event in (sg.WIN_CLOSED, "Esci"):
+            break
+
+        # Quando l'utente seleziona una cartella
+        if event == "-FOLDER-":
+            folder = values["-FOLDER-"]
+
+            if os.path.isdir(folder):
+
+                # --- aggiorna serie ---
+                lista_serie = leggi_serie(folder)
+                window["-SERIES_LIST-"].update(lista_serie)
+
+                # --- aggiorna dati paziente ---
+                nome, eta, sesso = leggi_dati_paziente(folder)
+                window["-PATIENT_NAME-"].update(nome)
+                window["-PATIENT_AGE-"].update(eta)
+                window["-PATIENT_SEX-"].update(sesso)
+
+    window.close()'''
