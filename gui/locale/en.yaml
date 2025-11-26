@@ -1,0 +1,14 @@
+MainTitle: "SCI Segmentator"
+
+Loader:
+  DICOMFolder: "DICOM Folder"
+  SelectDICOMFolder: "Select DICOM Folder"
+  PatientData: "Patient Data"
+  PatientName: "Name"
+  PatientAge: "Age"
+  PatientSex: "Sex"
+  DICOMSeries: "DICOM Series"
+  Browse: "Browse"
+  Exit: "Exit"
+
+

@@ -1,0 +1,14 @@
+MainTitle: "Segmentatore di SCI"
+
+Loader:
+  DICOMFolder: "Cartella DICOM"
+  SelectDICOMFolder: "Selezione Cartella DICOM"
+  PatientData: "Dati Paziente"
+  PatientName: "Nome"
+  PatientAge: "Età"
+  PatientSex: "Sesso"
+  DICOMSeries: "Serie DICOM"
+  Browse: "Sfoglia"
+  Exit: "Esci"
+
+
