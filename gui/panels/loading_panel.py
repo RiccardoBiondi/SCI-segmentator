@@ -19,7 +19,6 @@ class LoadingPanel:
     def _build_layout(self):
         # --- Selettore cartella ---
         folder_selector = [
-            [sg.Text(self.string["SelectDICOMFolder"])],
             [
                 sg.Input(key="-FOLDER-", enable_events=True),
                 sg.FolderBrowse(self.string["Browse"])
@@ -28,9 +27,9 @@ class LoadingPanel:
 
         # --- Dati paziente (ora sopra le serie) ---
         patient_info = [
-            [sg.Text(self.string["PatientName"]), sg.Text("", key="-PATIENT_NAME-", size=(30,1))],
-            [sg.Text(self.string["PatientAge"]), sg.Text("", key="-PATIENT_AGE-", size=(30,1))],
-            [sg.Text(self.string["PatientSex"]), sg.Text("", key="-PATIENT_SEX-", size=(30,1))]
+            [sg.Text(self.string["PatientName"]), sg.Text("", key="-PATIENT_NAME-", size=(40,1))],
+            [sg.Text(self.string["PatientAge"]), sg.Text("", key="-PATIENT_AGE-", size=(40,1))],
+            [sg.Text(self.string["PatientSex"]), sg.Text("", key="-PATIENT_SEX-", size=(40,1))]
         ]
 
         # --- Lista delle serie ---
@@ -40,20 +39,39 @@ class LoadingPanel:
                     values=[],
                     key="-SERIES_LIST-",
                     size=(40, 15),
-                    enable_events=True
+                    enable_events=True,
+                    expand_x=True,
+                    expand_y=True,
                 )
             ]
         ]
+
+        dropdown_menu = [
+            [sg.Text("FLAIR:"), sg.Combo(values=[], key="-DROPDOWN_FLAIR-", readonly=True, size=(40, 1))],
+            [sg.Text("T1W:  "), sg.Combo(values=[], key="-DROPDOWN_T1W-", readonly=True, size=(40, 1))]
+            #[sg.Text("T1W:")],
+            #    [
+            #        sg.Combo(
+            #            values=[],
+            #            key="-DROPDOWN-",
+            #            readonly=True,
+            #            size=(30, 1)
+            #        )
+            #    ]
+        ]
+
+
 
         layout = [
             [sg.Frame(self.string["DICOMFolder"], folder_selector)],
             [
                 sg.Column([
                     [sg.Frame(self.string["PatientData"], patient_info)],
-                    [sg.Frame(self.string["DICOMSeries"], series_list)]
+                    [sg.Frame(self.string["DICOMSeries"], series_list)],
+                    [sg.Frame(self.string["ImageSelector"], dropdown_menu )]
                 ])
             ],
-            [sg.Button("Esci")]
+            [sg.Button(self.string["Segment"]), sg.Button(self.string["PostProcess"])]
         ]
 
         return layout

@@ -10,7 +10,7 @@ ImageType = itk.Image[itk.F, 3]
 def _read_dicom_study(folder: str):
 
     logging.info(f"Parsing DICOM Series in {folder}")
-    
+    print("Ciao")
     namesGenerator = itk.GDCMSeriesFileNames.New()
     namesGenerator.SetUseSeriesDetails(True)
     namesGenerator.AddSeriesRestriction("0008|0021")
@@ -25,18 +25,20 @@ def _read_dicom_study(folder: str):
     seriesUIDs = namesGenerator.GetSeriesUIDs()
     
     logging.info(f"Found a total of {len(seriesUIDs)} unique series")
-
+    images = []
+    metadatas = [] 
     for seriesUID in seriesUIDs:
         UIDsFileNames = namesGenerator.GetFileNames(seriesUID)
         reader.SetFileNames(UIDsFileNames)
         _ = reader.Update()
 
-        image = reader.GetOutput()
-        #metadata = reader.Get
+        images.append(reader.GetOutput())
         metadata = dicomIO.GetMetaDataDictionary()
+        
+        metadatas.append({k: metadata[k] for k in metadata.GetKeys()})
 
-        print(metadata["0008|0060"])
 
+    return images, metadatas
 
 
 # Patient Name (‘0010’, ‘0010’)

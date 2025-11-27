@@ -10,5 +10,10 @@ Loader:
   DICOMSeries: "DICOM Series"
   Browse: "Browse"
   Exit: "Exit"
+  ImageSelector: "Input"
+  Segment: "Segment"
+  PostProcess: "PostProcess"
 
 
+ImagePreview:
+  Title: "Image Preview"

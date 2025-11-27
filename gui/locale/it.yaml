@@ -10,5 +10,9 @@ Loader:
   DICOMSeries: "Serie DICOM"
   Browse: "Sfoglia"
   Exit: "Esci"
+  ImageSelector: "Input"
+  Segment: "Segmenta"
+  PostProcess: "post-processa"
 
-
+ImagePreview:
+  Title: "Pre-Visualizzazione"
