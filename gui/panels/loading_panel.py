@@ -29,7 +29,9 @@ class LoadingPanel:
         patient_info = [
             [sg.Text(self.string["PatientName"]), sg.Text("", key="-PATIENT_NAME-", size=(40,1))],
             [sg.Text(self.string["PatientAge"]), sg.Text("", key="-PATIENT_AGE-", size=(40,1))],
-            [sg.Text(self.string["PatientSex"]), sg.Text("", key="-PATIENT_SEX-", size=(40,1))]
+            [sg.Text(self.string["PatientSex"]), sg.Text("", key="-PATIENT_SEX-", size=(40,1))],
+            [sg.Text(self.string["StudyDate"]), sg.Text("", key="-STUDY_DATE-", size=(40,1))]
+
         ]
 
         # --- Lista delle serie ---
@@ -49,15 +51,6 @@ class LoadingPanel:
         dropdown_menu = [
             [sg.Text("FLAIR:"), sg.Combo(values=[], key="-DROPDOWN_FLAIR-", readonly=True, size=(40, 1))],
             [sg.Text("T1W:  "), sg.Combo(values=[], key="-DROPDOWN_T1W-", readonly=True, size=(40, 1))]
-            #[sg.Text("T1W:")],
-            #    [
-            #        sg.Combo(
-            #            values=[],
-            #            key="-DROPDOWN-",
-            #            readonly=True,
-            #            size=(30, 1)
-            #        )
-            #    ]
         ]
 
 

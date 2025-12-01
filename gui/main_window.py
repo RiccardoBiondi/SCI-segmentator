@@ -7,6 +7,9 @@ from gui.panels.preview_panel import ImagePreviewPanel
 
 from sci_segmentator.core.loader import _read_dicom_study
 from gui.utilities import _format_image_metadata, _series_display_names_from_metadata
+
+from sci_segmentator import preprocess 
+
 __author__ = ["Riccardo Biondi"]
 __email__ = ["riccardo.biondi7@unibo.it"]
 
@@ -54,6 +57,8 @@ class MainWindow:
         # Display and interact with the Window using an Event Loop
         while True:
             event, values = window.read()
+
+            print(values)
             # See if user wants to quit or window was closed
             if event == sg.WINDOW_CLOSED or event == 'Quit':
                 break
@@ -68,7 +73,8 @@ class MainWindow:
                     image_lut = {metadata["0020|000e"] : [image, metadata] for image, metadata in zip(images, metadatas)}
 
                     series_lut = {_series_display_names_from_metadata(metadata) : metadata["0020|000e"] for metadata in metadatas}
-                    
+
+                    print(series_lut)                    
                     series_names = sorted(list(series_lut.keys()))
 
                     window["-SERIES_LIST-"].update(values=series_names)
@@ -92,9 +98,16 @@ class MainWindow:
 
                 self.preview_panel.update_preview(window, to_display, idx=int(values["-SLIDER-"]))
 
-
                 # --- aggiorna dati paziente ---
- 
+            if event ==  self.string["Loader"]["Segment"]:
+                
+                # this action will start the segmentation.
+                # First of all, it will check that a name for the flair and t1 is provided,
+                # It will also check if the ids are different, since T1 and FLAIR are stored in different series
+                if (values["-DROPDOWN_FLAIR-"] != '') & (values["-DROPDOWN_T1W-"] != '') & (values["-DROPDOWN_T1W-"] != values["-DROPDOWN_FLAIR-"]): 
 
+                    # chiamo la funzione per fare il preprocessing
+                    out = preprocess.run(flair=image_lut[series_lut[values["-DROPDOWN_FLAIR-"]]][0], t1=image_lut[series_lut[values["-DROPDOWN_T1W-"]]][0])
+                    print(out)
         # Finish up by removing from the screen
         window.close()
