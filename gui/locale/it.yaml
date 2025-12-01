@@ -7,6 +7,7 @@ Loader:
   PatientName: "Nome"
   PatientAge: "Età"
   PatientSex: "Sesso"
+  StudyDate: "Data di Acquisizione"
   DICOMSeries: "Serie DICOM"
   Browse: "Sfoglia"
   Exit: "Esci"

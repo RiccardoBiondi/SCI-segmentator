@@ -10,7 +10,6 @@ ImageType = itk.Image[itk.F, 3]
 def _read_dicom_study(folder: str):
 
     logging.info(f"Parsing DICOM Series in {folder}")
-    print("Ciao")
     namesGenerator = itk.GDCMSeriesFileNames.New()
     namesGenerator.SetUseSeriesDetails(True)
     namesGenerator.AddSeriesRestriction("0008|0021")
@@ -28,15 +27,20 @@ def _read_dicom_study(folder: str):
     images = []
     metadatas = [] 
     for seriesUID in seriesUIDs:
-        UIDsFileNames = namesGenerator.GetFileNames(seriesUID)
-        reader.SetFileNames(UIDsFileNames)
-        _ = reader.Update()
+        print(seriesUID)
+        try:
+            UIDsFileNames = namesGenerator.GetFileNames(seriesUID)
+            reader = itk.ImageSeriesReader[ImageType].New()
+            reader.SetImageIO(dicomIO)
+            reader.SetFileNames(UIDsFileNames)
+            _ = reader.Update()
 
-        images.append(reader.GetOutput())
-        metadata = dicomIO.GetMetaDataDictionary()
-        
-        metadatas.append({k: metadata[k] for k in metadata.GetKeys()})
-
+            images.append(reader.GetOutput())
+            metadata = dicomIO.GetMetaDataDictionary()
+            
+            metadatas.append({k: metadata[k] for k in metadata.GetKeys()})
+        except:
+            print("Exception")
 
     return images, metadatas
 

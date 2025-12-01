@@ -1,10 +1,12 @@
 import os
+import itk
+import numpy as np
 import FreeSimpleGUI as sg
 from gui.panels.loading_panel import LoadingPanel
 from gui.panels.preview_panel import ImagePreviewPanel
 
 from sci_segmentator.core.loader import _read_dicom_study
-from gui.utilities import _format_image_metadata, _series_display_names_from_metadata_lut
+from gui.utilities import _format_image_metadata, _series_display_names_from_metadata
 __author__ = ["Riccardo Biondi"]
 __email__ = ["riccardo.biondi7@unibo.it"]
 
@@ -44,6 +46,8 @@ class MainWindow:
 
     def run(self):
 
+        # TODO Bind the logic in some internal class functions, in order to clean up the code
+
         # Create the window
         window = sg.Window(self.string["MainTitle"], self._layout, resizable=True)
 
@@ -59,20 +63,38 @@ class MainWindow:
                 folder = values["-FOLDER-"]
 
                 if os.path.isdir(folder):
-                    print(folder)
                     # --- aggiorna serie ---
                     images, metadatas = _read_dicom_study(folder)
+                    image_lut = {metadata["0020|000e"] : [image, metadata] for image, metadata in zip(images, metadatas)}
 
-                    series_lut = [_series_display_names_from_metadata_lut(metadata) for metadata in metadatas]
-                    series_names = [list(e.keys())[0] for e in series_lut]
+                    series_lut = {_series_display_names_from_metadata(metadata) : metadata["0020|000e"] for metadata in metadatas}
+                    
+                    series_names = sorted(list(series_lut.keys()))
+
                     window["-SERIES_LIST-"].update(values=series_names)
                     window["-DROPDOWN_FLAIR-"].update(values=series_names)
                     window["-DROPDOWN_T1W-"].update(values=series_names)
 
+                    window["-PATIENT_NAME-"].update(metadatas[0]["0010|0010"])
+                    window["-PATIENT_AGE-"].update("N/A") #Change
+                    window["-PATIENT_SEX-"].update(metadatas[0]["0010|0040"])
+                    window["-STUDY_DATE-"].update(metadatas[0]["0008|0020"])
+
+            if event == "-SERIES_LIST-":
+
+                selected_uid = series_lut[values["-SERIES_LIST-"][0]]
+                to_display = itk.GetArrayFromImage(image_lut[selected_uid][0])
+                to_display = 255 * (to_display - to_display.min()) / (to_display.max() - to_display.min())
+                self.preview_panel.slider_range = to_display.shape[0] - 1
+                self.preview_panel.update_preview(window, to_display.astype(np.uint8), idx=to_display.shape[0] // 2)
+
+            if event == "-SLIDER-":
+
+                self.preview_panel.update_preview(window, to_display, idx=int(values["-SLIDER-"]))
+
+
                 # --- aggiorna dati paziente ---
-                window["-PATIENT_NAME-"].update(metadatas[0]["0010|0010"])
-                window["-PATIENT_AGE-"].update("N/A") #Change
-                window["-PATIENT_SEX-"].update(metadatas[0]["0010|0040"])
+ 
 
         # Finish up by removing from the screen
         window.close()

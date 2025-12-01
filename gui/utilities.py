@@ -1,6 +1,9 @@
 import os
 import logging
-from typing import List, Dict
+from typing import List, Dict, Tuple
+from PIL import Image
+import io
+
 __author__ = ["Riccardo Biondi"]
 __email__ = ["riccardo.biondi7@unibo.it"]
 
@@ -22,7 +25,7 @@ def _format_image_metadata(metadata, replacement: str = "N/A", keys: List[str] =
     return out_dict
 
 
-def _series_display_names_from_metadata_lut(metadata: Dict[str, str]) -> Dict[str, str]:
+def _series_display_names_from_metadata(metadata: Dict[str, str]) -> str:
 
     meta_keys = list(metadata.keys())
     
@@ -30,5 +33,15 @@ def _series_display_names_from_metadata_lut(metadata: Dict[str, str]) -> Dict[st
     description =  metadata["0008|103e"] if "0008|103e" in meta_keys else " "
     number = metadata["0020|0011"] if "0020|0011" in meta_keys else " "
     series_uid = metadata["0020|000e"]
-    print(series_uid)
-    return {"-".join([number, description, modality]): series_uid}
+
+    return "-".join([number, description, modality])
+
+
+def to_png_bytes(image_2d, size: Tuple[int, int]):
+    img = Image.fromarray(image_2d)#.convert("L")
+    img = img.resize(size, Image.Resampling.LANCZOS)
+
+    with io.BytesIO() as output:
+        img.save(output, format="PNG")
+        data = output.getvalue()
+    return data
