@@ -4,6 +4,7 @@ import numpy as np
 import FreeSimpleGUI as sg
 from gui.panels.loading_panel import LoadingPanel
 from gui.panels.preview_panel import ImagePreviewPanel
+from gui.panels.stats_panel   import SegmentationStatsPanel
 
 from sci_segmentator.core.loader import _read_dicom_study
 from gui.utilities import _format_image_metadata, _series_display_names_from_metadata
@@ -33,6 +34,7 @@ class MainWindow:
 
         self.loading_panel = LoadingPanel(config, string["Loader"])
         self.preview_panel = ImagePreviewPanel(config, string["ImagePreview"])
+        self.stats_panel = SegmentationStatsPanel(config, string["Stats"])
         _ = self._build_layout()
 
 
@@ -44,7 +46,9 @@ class MainWindow:
         self._layout = [[
                         sg.Column(self.loading_panel.layout),
                         sg.VSeparator(),
-                        sg.Column(self.preview_panel.layout)]]
+                        sg.Column(self.preview_panel.layout),
+                        sg.VSeparator(),
+                        sg.Column(self.stats_panel.layout)]]
 
 
     def run(self):
