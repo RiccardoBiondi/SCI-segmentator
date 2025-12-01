@@ -2,7 +2,7 @@ import os
 import itk
 import logging
 import argparse 
-from core.filters import itk_orient_image_to_axial
+from sci_segmentator.core.filters import itk_orient_image_to_axial
 
 LOG_LEVELS = {
     0: logging.ERROR,
@@ -45,6 +45,20 @@ def parse_args():
     return args
 
 
+def run(image, logger):
+
+
+    _, dimension = itk.template(image)[1]
+
+    if dimension not in [2, 3]:
+        logger.error(f"Scan Dimension should be 2D or 3D, founr {dimension}D instead")
+    
+    logger.info("Ensuring RIS (Right, Inferior, Superior) Orientation")
+
+    image = itk_orient_image_to_axial(image)
+
+    return image
+
 
 def main():
 
@@ -56,15 +70,7 @@ def main():
     logger.info(f"Reading scan from {args.input}")
     scan = itk.imread(args.input, itk.F)
 
-    _, dimension = itk.template(scan)[1]
-
-    if dimension not in [2, 3]:
-
-        logger.error(f"Scan Dimension should be 2D or 3D, founr {dimension}D instead")
-    
-    logger.info("Ensuring RIS (Right, Inferior, Superior) Orientation")
-
-    scan = itk_orient_image_to_axial(scan)
+    scan = run(scan, logger)
 
     logger.info(f"Writing the Results on {args.output}")
 

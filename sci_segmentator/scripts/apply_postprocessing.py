@@ -136,6 +136,10 @@ def create_image(reference):
     return image
 
 
+def run(input_image, features, activation_threshold):
+    ...
+
+
 def main():
     args = parse_args()
 

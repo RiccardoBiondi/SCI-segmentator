@@ -3,12 +3,12 @@ import itk
 import logging
 import argparse
 
-from core.filters import itk_orient_image_to_axial
-from core.filters import itk_multi_otsu_threshold
-from core.filters import itk_cast
-from core.filters import itk_binary_morphological_closing
-from core.filters import flood_fill_2d
-from core.filters import itk_cast
+from sci_segmentator.core.filters import itk_orient_image_to_axial
+from sci_segmentator.core.filters import itk_multi_otsu_threshold
+from sci_segmentator.core.filters import itk_cast
+from sci_segmentator.core.filters import itk_binary_morphological_closing
+from sci_segmentator.core.filters import flood_fill_2d
+from sci_segmentator.core.filters import itk_cast
 
 LOG_LEVELS = {
     0: logging.ERROR,
@@ -51,6 +51,22 @@ def parse_args():
     return args
 
 
+def run(image, logger):
+
+    _, dimension = itk.template(image)[1]
+
+    if dimension not in [2, 3]:
+        logger.error(f"Scan Dimension should be 2D or 3D, found {dimension}D instead")
+
+    logger.info("Define the head region definition")
+    brain = itk_multi_otsu_threshold(image,  1)
+    brain = itk_cast(brain.GetOutput(), itk.SS)
+    brain = itk_binary_morphological_closing(brain.GetOutput(), 5)
+    brain = flood_fill_2d(brain.GetOutput())
+    brain = itk_cast(brain.GetOutput(), itk.UC)
+    
+    return brain
+
 def main():
 
     args = parse_args()
@@ -61,20 +77,7 @@ def main():
     logger.info(f"Reading scan from {args.input}")
     scan = itk.imread(args.input, itk.F)
     
-    _, dimension = itk.template(scan)[1]
-
-    if dimension not in [2, 3]:
-
-        logger.error(f"Scan Dimension should be 2D or 3D, found {dimension}D instead")
-
-    logger.info("Define the head region definition")
-    brain = itk_multi_otsu_threshold(scan,  1)
-    brain = itk_cast(brain.GetOutput(), itk.SS)
-    brain = itk_binary_morphological_closing(brain.GetOutput(), 5)
-    brain = flood_fill_2d(brain.GetOutput())
-    brain = itk_cast(brain.GetOutput(), itk.UC)
-
-
+    brain = run(scan, logger)
 
     logger.info(f"Writing the Results on {args.output}")
 
