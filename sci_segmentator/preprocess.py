@@ -5,6 +5,8 @@ import logging
 from sci_segmentator.scripts import scan_ras_orienter
 from sci_segmentator.scripts import bias_field_correction
 from sci_segmentator.scripts import compute_head_region
+from sci_segmentator.scripts import scan_registration
+from sci_segmentator.scripts import apply_transforms
 
 def run(flair, t1):
 
@@ -19,5 +21,23 @@ def run(flair, t1):
 
     head = compute_head_region.run(t1.GetOutput(), logger)
 
-    return "Fatto"
+    # register t1 onto flair
+    logger.info("Register T1 onto FLAIR")
+    transform_params, parameter_maps, registered = scan_registration.run(moving=t1.GetOutput(), fixed=flair.GetOutput(), indirect=False, transforms=["rigid", "affine"], metrics="AdvancedMattesMutualInformation", resolutions=4, combination="Compose")
+
+    logger.info("Register Head Mask onto FLAIR ")
+
+    # apply transform onto exclusion region
+    head = apply_transforms.run(head.GetOutput(), transform_params, True, 2)
+
+    # apply transform onto exclusion region onto t1 to register onto FLAIR
+
+    # map head region onto flair
+
+    # get wm region from T1
+
+    # 
+
+
+    return head
     

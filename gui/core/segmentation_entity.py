@@ -24,6 +24,10 @@ class SegmentatorEntity:
         '''
         return self._is_executable
     
+    @is_executable.setter
+    def is_executable(self, value: bool) -> NoReturn:
+        self._is_executable = value
+    
     def output(self):
         return self._output
 
@@ -42,7 +46,9 @@ class SegmentatorEntity:
         """
         print("Ciaooooo")
 
-        #self._output = preprocess.run(flair=flair, t1=t1)
+        self._output = preprocess.run(flair=flair, t1=t1)
+
+        print(self._output)
 
         self._status = True
         

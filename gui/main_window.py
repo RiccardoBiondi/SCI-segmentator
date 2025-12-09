@@ -122,7 +122,7 @@ class MainWindow:
                     # if a current segmentation exists, then reset the objecgt
                     if segmentation_entity.status:
                         segmentation_entity.reset()
-                    segmentation_entity.update(t1=input_entity[values["-DROPDOWN_T1W-"]]2, flair=input_entity[values["-DROPDOWN_FLAIR-"]])
+                    segmentation_entity.update(t1=input_entity[values["-DROPDOWN_T1W-"]], flair=input_entity[values["-DROPDOWN_FLAIR-"]])
                     window["-POSTPROCESS-"].update(disabled= not segmentation_entity.status)
                  
                 

@@ -4,7 +4,7 @@ import logging
 import argparse
 
 
-from core.filters import itk_orient_image_to_axial
+from sci_segmentator.core.filters import itk_orient_image_to_axial
 
 
 __author__ = ["Riccardo Biondi", "Nicolas Biondini"]
@@ -70,6 +70,20 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+
+def run(image, transform, binary, n_transforms):
+
+    logger.debug("Apply transforms")
+
+    if binary:
+        logger.debug("Set BSpline Interpolation ordere to zero")
+        for idx in range(len(n_transforms)):
+            _ = transform.SetParameter(idx, 'FinalBSplineInterpolationOrder', '0')
+
+        logger.debing("Applying transforms to image")
+
+        result = itk.transformix_filter(image, transform)
+        return result
 
 def main():
     

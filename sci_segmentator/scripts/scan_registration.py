@@ -3,10 +3,10 @@ import itk
 import logging
 import argparse
 
-from core.ragistration import get_multimap_parameters
-from core.filters import itk_orient_image_to_axial
-from core.filters import itk_multi_otsu_threshold
-from core.filters import itk_cast
+from sci_segmentator.core.ragistration import get_multimap_parameters
+from sci_segmentator.core.filters import itk_orient_image_to_axial
+from sci_segmentator.core.filters import itk_multi_otsu_threshold
+from sci_segmentator.core.filters import itk_cast
 
 __author__ = ["Riccardo Biondi", "Nicolas Biondini"]
 __email__ = ["riccardo.biondi7@unibo.it", "nicolas.biondini2@unibo.it"]
@@ -166,30 +166,26 @@ def align_image_centroids(moving, fixed):
     return resampler.GetOutput()
 
 
-def run(moving, fixed, indirect, transforms, resolutions, metrics, combination, logger):
+def run(moving, fixed, indirect, transforms, resolutions, metrics, combination):
 
     if indirect:
         logger.info("Running Indirect Registration")        
         transform_params, transform_map = indirect_registration(moving, fixed, modalities=transforms, metric=metrics, resolutions=resolutions, combine_parameters=combination)
 
     else:
-        logger.info("Rinning Registration")
+        logger.info("Running Registration")
         transform_params, transform_map = direct_registration(moving, fixed, modalities=transforms, metric=metrics, resolutions=resolutions, combine_parameters=combination)
 
     registered = itk.transformix_filter()
-    if args.output_transform is not None:
-        logger.info(f"Running Output Transforms with base name {args.output_transform}")
-        for idx in range(transform_params.GetNumberOfParameterMaps()):
-            parameter_map = transform_params.GetParameterMap(idx)
-            transform_params.WriteParameterFile(parameter_map, f"{args.output_transform}_{idx}.txt" )
+
+    logger.info(f"Running Output Transforms with base name {args.output_transform}")
+    parameter_maps = [transform_params.GetParameterMap(idx) for idx in range(transform_params.GetNumberOfParameterMaps())]
         # write the transform file
 
-    if args.output is not None:
-        logger.info("Appling estimated transforms to moving image ")
-        registered =  itk.transformix_filter(moving, transform_params)
-        logger.info(f"Writing resulting image to {args.output}")
-        _ = itk.imwrite(registered, args.output)
-    ...
+    logger.info("Appling estimated transforms to moving image ")
+    registered =  itk.transformix_filter(moving, transform_params)
+
+    return transform_params, parameter_maps, registered
 
 def main():
 
@@ -205,26 +201,35 @@ def main():
     logger.info(f"Reading reference scan from {args.reference}")
     fixed = itk.imread(args.reference, itk.F)
 
-    if args.indirect:
-        logger.info("Running Indirect Registration")        
-        transform_params, transform_map = indirect_registration(moving, fixed, modalities=args.transform, metric=args.metric, resolutions=args.resolutions, combine_parameters=args.combination)
-
-    else:
-        logger.info("Rinning Registration")
-        transform_params, transform_map = direct_registration(moving, fixed, modalities=args.transform, metric=args.metric, resolutions=args.resolutions, combine_parameters=args.combination)
-
+    transform_params, parameter_maps, registered = run(moving=moving, fixed=fixed, indirect=args.indirect, transforms=args.transform, metric=args.metric, resolutions=args.resolutions, combine_parameters=args.combination)
+    
     if args.output_transform is not None:
-        logger.info(f"Running Output Transforms with base name {args.output_transform}")
-        for idx in range(transform_params.GetNumberOfParameterMaps()):
-            parameter_map = transform_params.GetParameterMap(idx)
+        for idx, parameter_map in enumerate(parameter_maps):
             transform_params.WriteParameterFile(parameter_map, f"{args.output_transform}_{idx}.txt" )
-        # write the transform file
-
+    
     if args.output is not None:
-        logger.info("Appling estimated transforms to moving image ")
-        registered =  itk.transformix_filter(moving, transform_params)
         logger.info(f"Writing resulting image to {args.output}")
         _ = itk.imwrite(registered, args.output)
+    #if args.indirect:
+    #    logger.info("Running Indirect Registration")        
+    #    transform_params, transform_map = indirect_registration(moving, fixed, modalities=args.transform, metric=args.metric, resolutions=args.resolutions, combine_parameters=args.combination)
+#
+    #else:
+    #    logger.info("Rinning Registration")
+    #    transform_params, transform_map = direct_registration(moving, fixed, modalities=args.transform, metric=args.metric, resolutions=args.resolutions, combine_parameters=args.combination)
+#
+    #if args.output_transform is not None:
+    #    logger.info(f"Running Output Transforms with base name {args.output_transform}")
+    #    for idx in range(transform_params.GetNumberOfParameterMaps()):
+    #        parameter_map = transform_params.GetParameterMap(idx)
+    #        transform_params.WriteParameterFile(parameter_map, f"{args.output_transform}_{idx}.txt" )
+    #    # write the transform file
+#
+    #if args.output is not None:
+    #    logger.info("Appling estimated transforms to moving image ")
+    #    registered =  itk.transformix_filter(moving, transform_params)
+    #    logger.info(f"Writing resulting image to {args.output}")
+    #    _ = itk.imwrite(registered, args.output)
 
 
 if __name__ == "__main__":
