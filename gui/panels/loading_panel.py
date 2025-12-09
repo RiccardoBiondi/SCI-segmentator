@@ -49,8 +49,8 @@ class LoadingPanel:
         ]
 
         dropdown_menu = [
-            [sg.Text("FLAIR:"), sg.Combo(values=[], key="-DROPDOWN_FLAIR-", readonly=True, size=(40, 1))],
-            [sg.Text("T1W:  "), sg.Combo(values=[], key="-DROPDOWN_T1W-", readonly=True, size=(40, 1))]
+            [sg.Text("FLAIR:"), sg.Combo(values=[], key="-DROPDOWN_FLAIR-", readonly=True, size=(40, 1), enable_events=True)],
+            [sg.Text("T1W:  "), sg.Combo(values=[], key="-DROPDOWN_T1W-", readonly=True, size=(40, 1), enable_events=True)]
         ]
 
 
@@ -64,7 +64,7 @@ class LoadingPanel:
                     [sg.Frame(self.string["ImageSelector"], dropdown_menu )]
                 ])
             ],
-            [sg.Button(self.string["Segment"]), sg.Button(self.string["PostProcess"])]
+            [sg.Button(self.string["Segment"],  disabled=True, key="-SEGMENT-"), sg.Button(self.string["PostProcess"],  key="-POSTPROCESS-", disabled=True)]
         ]
 
         return layout
