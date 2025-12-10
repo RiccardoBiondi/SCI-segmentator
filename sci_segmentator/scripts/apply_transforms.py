@@ -17,7 +17,7 @@ LOG_LEVELS = {
     3: logging.DEBUG
 }
 
-logger = logging.getLogger(__file__)
+
 
 def parse_args():
     
@@ -71,16 +71,16 @@ def parse_args():
     return args
 
 
-def run(image, transform, binary, n_transforms):
+def run(image, transform, binary, n_transforms, logger=logging):
 
     logger.debug("Apply transforms")
 
     if binary:
         logger.debug("Set BSpline Interpolation ordere to zero")
-        for idx in range(len(n_transforms)):
+        for idx in range(n_transforms):
             _ = transform.SetParameter(idx, 'FinalBSplineInterpolationOrder', '0')
 
-        logger.debing("Applying transforms to image")
+        logger.debug("Applying transforms to image")
 
         result = itk.transformix_filter(image, transform)
         return result
@@ -90,8 +90,7 @@ def main():
     args = parse_args()
 
     logging.basicConfig(level=LOG_LEVELS[min(args.verbose, 3)])
-
-    print(args)
+    logger = logging.getLogger(__file__)
 
     logger.info(f"Reading Image to transform from {args.input}")
 

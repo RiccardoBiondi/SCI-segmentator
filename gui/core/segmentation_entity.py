@@ -1,7 +1,10 @@
 import os
 import itk
+import logging
 from typing import NoReturn
 from sci_segmentator import preprocess 
+from sci_segmentator import segmentation
+
 
 class SegmentatorEntity:
     """
@@ -43,13 +46,14 @@ class SegmentatorEntity:
 
     def update(self, t1, flair) -> NoReturn:
         """
-        """
-        print("Ciaooooo")
+        """        
 
-        self._output = preprocess.run(flair=flair, t1=t1)
-
-        print(self._output)
-
-        self._status = True
+        try:
+            seg_input = preprocess.run(flair=flair, t1=t1)
+            itk.imwrite(seg_input.GetOutput(), "/DATA/flair_test.nii.gz")
+            self._output = segmentation.run(seg_input.GetOutput(), model_list=["./fixtures/ensamble_0.onnx", "./fixtures/ensamble_1.onnx", "./fixtures/ensamble_2.onnx", "./fixtures/ensamble_3.onnx", "./fixtures/ensamble_4.onnx"])
+            self._status = True
+        except Exception as e:
+            logging.error(e)
         
         

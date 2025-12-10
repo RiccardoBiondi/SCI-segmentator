@@ -19,7 +19,6 @@ LOG_LEVELS = {
     3: logging.DEBUG
 }
 
-logger = logging.getLogger(__file__)
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Script to Register the input image onto the reference one.")
@@ -124,7 +123,7 @@ def parse_args():
     return args
 
 
-def indirect_registration(moving, fixed, modalities=["rigid", "affine"], metric="AdvancedMattesMutualInformation", resolutions=4, combine_parameters="Compose"):
+def indirect_registration(moving, fixed, modalities=["rigid", "affine"], metric="AdvancedMattesMutualInformation", resolutions=4, combine_parameters="Compose", logger=logging):
     """
     """
     logger.debug(f"Indirect Registration: - modalities={modalities} - metric={metric} - resolutions={resolutions} - combine parameters={combine_parameters}")
@@ -137,9 +136,10 @@ def indirect_registration(moving, fixed, modalities=["rigid", "affine"], metric=
     return indirect_transform_parameters, indirect_parameter_map
 
 
-def direct_registration(moving, fixed, modalities=["rigid", "affine"], metric="AdvancedMattesMutualInformation", resolutions=4, combine_parameters="Compose"):
-
+def direct_registration(moving, fixed, modalities=["rigid", "affine"], metric="AdvancedMattesMutualInformation", resolutions=4, combine_parameters="Compose", logger=logging):
+    logger.debug("create parameter map")
     parameter_map = get_multimap_parameters(metric=metric, resolutions=resolutions, modalities=modalities, transform_combination=combine_parameters, initial_tranform=False)
+    logger.debug(f"created parammeter map: {parameter_map}")
 
     _, transform_parameters = itk.elastix_registration_method(fixed, moving, parameter_object=parameter_map, log_to_console=False)
     return transform_parameters, parameter_map
@@ -166,19 +166,17 @@ def align_image_centroids(moving, fixed):
     return resampler.GetOutput()
 
 
-def run(moving, fixed, indirect, transforms, resolutions, metrics, combination):
+def run(moving, fixed, indirect, transforms, resolutions, metrics, combination, logger):
 
     if indirect:
         logger.info("Running Indirect Registration")        
-        transform_params, transform_map = indirect_registration(moving, fixed, modalities=transforms, metric=metrics, resolutions=resolutions, combine_parameters=combination)
+        transform_params, transform_map = indirect_registration(moving, fixed, modalities=transforms, metric=metrics, resolutions=resolutions, combine_parameters=combination, logger=logger)
 
     else:
         logger.info("Running Registration")
-        transform_params, transform_map = direct_registration(moving, fixed, modalities=transforms, metric=metrics, resolutions=resolutions, combine_parameters=combination)
+        transform_params, transform_map = direct_registration(moving, fixed, modalities=transforms, metric=metrics, resolutions=resolutions, combine_parameters=combination, logger=logger)
 
-    registered = itk.transformix_filter()
-
-    logger.info(f"Running Output Transforms with base name {args.output_transform}")
+    logger.info(f"Format Parameter map for writing and later ")
     parameter_maps = [transform_params.GetParameterMap(idx) for idx in range(transform_params.GetNumberOfParameterMaps())]
         # write the transform file
 
@@ -193,6 +191,7 @@ def main():
 
 
     logging.basicConfig(level=LOG_LEVELS[min(args.verbose, 3)])
+    logger = logging.getLogger(__file__)
 
     logger.info(f"Reading input scan from {args.input}")
     moving = itk.imread(args.input, itk.F)
@@ -210,26 +209,6 @@ def main():
     if args.output is not None:
         logger.info(f"Writing resulting image to {args.output}")
         _ = itk.imwrite(registered, args.output)
-    #if args.indirect:
-    #    logger.info("Running Indirect Registration")        
-    #    transform_params, transform_map = indirect_registration(moving, fixed, modalities=args.transform, metric=args.metric, resolutions=args.resolutions, combine_parameters=args.combination)
-#
-    #else:
-    #    logger.info("Rinning Registration")
-    #    transform_params, transform_map = direct_registration(moving, fixed, modalities=args.transform, metric=args.metric, resolutions=args.resolutions, combine_parameters=args.combination)
-#
-    #if args.output_transform is not None:
-    #    logger.info(f"Running Output Transforms with base name {args.output_transform}")
-    #    for idx in range(transform_params.GetNumberOfParameterMaps()):
-    #        parameter_map = transform_params.GetParameterMap(idx)
-    #        transform_params.WriteParameterFile(parameter_map, f"{args.output_transform}_{idx}.txt" )
-    #    # write the transform file
-#
-    #if args.output is not None:
-    #    logger.info("Appling estimated transforms to moving image ")
-    #    registered =  itk.transformix_filter(moving, transform_params)
-    #    logger.info(f"Writing resulting image to {args.output}")
-    #    _ = itk.imwrite(registered, args.output)
 
 
 if __name__ == "__main__":

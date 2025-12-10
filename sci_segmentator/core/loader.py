@@ -3,11 +3,13 @@ import itk
 import logging
 import argparse
 from typing import List, Tuple
+import FreeSimpleGUI as sg
 
+from gui.panels.popups import PopupProgressBar
 
 ImageType = itk.Image[itk.F, 3]
 
-def _read_dicom_study(folder: str):
+def _read_dicom_study(folder: str, logger=logging):
 
     logging.info(f"Parsing DICOM Series in {folder}")
     namesGenerator = itk.GDCMSeriesFileNames.New()
@@ -25,22 +27,26 @@ def _read_dicom_study(folder: str):
     
     logging.info(f"Found a total of {len(seriesUIDs)} unique series")
     images = []
-    metadatas = [] 
-    for seriesUID in seriesUIDs:
-        print(seriesUID)
+    metadatas = []
+
+
+    #with PopupProgressBar(bar_max=len(seriesUIDs), title="Loading DICOM Series", text="Loaded Series") as pb:
+    for i, seriesUID in enumerate(seriesUIDs):
+        
+        sg.one_line_progress_meter("Loading DICOM Series", i+1, len(seriesUIDs))
+        
         try:
             UIDsFileNames = namesGenerator.GetFileNames(seriesUID)
             reader = itk.ImageSeriesReader[ImageType].New()
             reader.SetImageIO(dicomIO)
             reader.SetFileNames(UIDsFileNames)
             _ = reader.Update()
-
             images.append(reader.GetOutput())
             metadata = dicomIO.GetMetaDataDictionary()
             
             metadatas.append({k: metadata[k] for k in metadata.GetKeys()})
-        except:
-            print("Exception")
+        except Exception as e:
+            logger.error(e)
 
     return images, metadatas
 

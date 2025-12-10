@@ -3,8 +3,8 @@ import itk
 import logging
 import argparse
 
-from core.filters import itk_label_shape_statistics
-from core.filters import itk_region_of_interest
+from sci_segmentator.core.filters import itk_label_shape_statistics
+from sci_segmentator.core.filters import itk_region_of_interest
 
 
 LOG_LEVELS = {
@@ -68,6 +68,19 @@ def parse_args():
     return args
 
 
+def run(image, mask, logger=logging):
+
+    logger.debug("Computing Cropping Bounding Box")
+    stats = itk_label_shape_statistics(mask, label=1)
+    bbox = stats.GetOutput().GetNthLabelObject(0).GetBoundingBox()
+    logger.debug(f"Estimated bounding box: {bbox}")
+    logger.debug("Cropping image on estimated bounding box")
+    res = itk_region_of_interest(image, bbox)
+
+    return res
+
+
+
 def main():
     
     args = parse_args()
@@ -80,11 +93,12 @@ def main():
     mask = itk.imread(args.mask, itk.UC)
 
     logger.info("Get Boiunding Box containing the head")
-    stats = itk_label_shape_statistics(mask, label=1)
-    bbox = stats.GetOutput().GetNthLabelObject(0).GetBoundingBox()
-
-    logger.info("Cropping the target image")
-    res = itk_region_of_interest(image, bbox)
+    res = run(image, mask, logger)
+    #stats = itk_label_shape_statistics(mask, label=1)
+    #bbox = stats.GetOutput().GetNthLabelObject(0).GetBoundingBox()
+#
+    #logger.info("Cropping the target image")
+    #res = itk_region_of_interest(image, bbox)
 
     logger.info(f"Saving the Result to {args.output}")
     itk.imwrite(res.GetOutput(), args.output)

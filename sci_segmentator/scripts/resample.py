@@ -3,8 +3,8 @@ import itk
 import logging
 import argparse
 
-from core.filters import itk_resample
-from core.filters import infer_itk_image_type
+from sci_segmentator.core.filters import itk_resample
+from sci_segmentator.core.filters import infer_itk_image_type
 
 
 LOG_LEVELS = {
@@ -103,17 +103,11 @@ INTERPOLATORS = {
     "bspline": itk_spline_interpolator,
 }
 
-def main():
 
-
-    args = parse_args()
-    logging.basicConfig(level=LOG_LEVELS[min(args.verbose, 3)])
-
-    logger.info(f"Reading Image to Normalize from {args.input}")
-    image = itk.imread(args.input, itk.F)
+def run(image, interpolator="nn", logger=logging):
     input_type = infer_itk_image_type(image, None)
 
-    logger.info(f"Computing the new image spacing, for the size of 256 256 in sagittal and coronal directions")
+    logger.debug(f"Computing the new image spacing, for the size of 256 256 in sagittal and coronal directions")
 
     logger.debug(f"Image Size {image.GetLargestPossibleRegion().GetSize()}")
     logger.debug(f"Image Spacing {image.GetSpacing()}")
@@ -126,13 +120,25 @@ def main():
     logger.debug(f"New Image Size {new_size}")
     logger.debug(f"New Image Spacing {new_space}")
 
-    logger.info(f"Init {args.interpolator} the interpolator")
+    logger.debug(f"Init {interpolator} the interpolator")
 
-    interpolator = INTERPOLATORS[args.interpolator](input_type)
+    interpolator = INTERPOLATORS[interpolator](input_type)
 
-    logger.info("Resample the image")
+    logger.debug("Resample the image")
     resampled = itk_resample(image=image, new_size=new_size, new_space=new_space, interpolator=interpolator)
 
+    return resampled
+
+def main():
+
+
+    args = parse_args()
+    logging.basicConfig(level=LOG_LEVELS[min(args.verbose, 3)])
+
+    logger.info(f"Reading Image to Normalize from {args.input}")
+    image = itk.imread(args.input, itk.F)
+ 
+    resampled = run(image, args.interpolator, logger)
     logging.info(f"Saving Image to {args.output}")
     itk.imwrite(resampled.GetOutput(), args.output)
 

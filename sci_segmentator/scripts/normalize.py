@@ -2,9 +2,9 @@ import itk
 import logging
 import argparse
 
-from core.filters import itk_label_statistics
-from core.filters import itk_gaussian_normalization
-from core.filters import itk_mask
+from sci_segmentator.core.filters import itk_label_statistics
+from sci_segmentator.core.filters import itk_gaussian_normalization
+from sci_segmentator.core.filters import itk_mask
 
 __author__ = ["Riccardo Biondi", "Nicolas Biondini"]
 __email__ = ["riccardo.biondi7@unibo.it", "nicolas.biondini2@unibo.it"]
@@ -59,6 +59,20 @@ def parse_args():
     return args
 
 
+def run(image, mask, logger=logging):
+
+    logger.debug("GL Normalization into selected region")
+    normalized = itk_gaussian_normalization(image=image, mask=mask)
+
+    logger.debug("Getting Minimum GL value inside the target region")
+    stats = itk_label_statistics(image=normalized.GetOutput(), labelmap=mask)
+    min_ = stats.GetMinimum(1)
+    logger.debug(f"Setting VAlues outside the target region to {min_}")
+    normalized = itk_mask(image=normalized.GetOutput(), mask=mask, outside_value=min_)
+
+    return normalized
+    ...
+
 def main():
     
     args = parse_args()
@@ -69,17 +83,17 @@ def main():
 
     logger.info(f"Reading Region Mask from {args.mask}")
     mask = itk.imread(args.mask, itk.UC)
-
-    logging.info("Normalizing GL in head region according mean and standard deviation inside the region itself")
-    normalized = itk_gaussian_normalization(image=image, mask=mask)
-
-    logging.info("Setting the values outside the mask region to the minimum GL value of the normalized region")
-
-    stats = itk_label_statistics(image=normalized.GetOutput(), labelmap=mask)
-    min_ = stats.GetMinimum(1)
-    normalized = itk_mask(image=normalized.GetOutput(), mask=mask, outside_value=min_)
-
-    logging.info(f"Saving the Result to {args.output}")
+    normalized = run(image, mask, logger)
+    #logging.info("Normalizing GL in head region according mean and standard deviation inside the region itself")
+    #normalized = itk_gaussian_normalization(image=image, mask=mask)
+#
+    #logging.info("Setting the values outside the mask region to the minimum GL value of the normalized region")
+#
+    #stats = itk_label_statistics(image=normalized.GetOutput(), labelmap=mask)
+    #min_ = stats.GetMinimum(1)
+    #normalized = itk_mask(image=normalized.GetOutput(), mask=mask, outside_value=min_)
+#
+    #logging.info(f"Saving the Result to {args.output}")
     itk.imwrite(normalized.GetOutput(), args.output)
 
 

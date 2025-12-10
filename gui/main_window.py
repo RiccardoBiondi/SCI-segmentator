@@ -9,7 +9,8 @@ from gui.core.input_entity import InputEntity
 from gui.core.display_entity import DisplayITKImageEntity
 from gui.core.segmentation_entity import SegmentatorEntity
 
-
+import threading
+from time import sleep
 
 from sci_segmentator.core.loader import _read_dicom_study
 from gui.utilities import _format_image_metadata, _series_display_names_from_metadata
@@ -55,13 +56,12 @@ class MainWindow:
                         sg.VSeparator(),
                         sg.Column(self.stats_panel.layout)]]
 
-
     def run(self):
 
         # TODO Bind the logic in some internal class functions, in order to clean up the code
 
         # Create the window
-        window = sg.Window(self.string["MainTitle"], self._layout, resizable=True)
+        window = sg.Window(self.string["MainTitle"], self._layout, resizable=True, icon="/home/briccardo/codes/github/RiccardoBiondi/SCI-Segmentator/fixtures/icon.ico")
 
 
         # now create the instance of the main GUI entities
@@ -124,7 +124,6 @@ class MainWindow:
                         segmentation_entity.reset()
                     segmentation_entity.update(t1=input_entity[values["-DROPDOWN_T1W-"]], flair=input_entity[values["-DROPDOWN_FLAIR-"]])
                     window["-POSTPROCESS-"].update(disabled= not segmentation_entity.status)
-                 
                 
                 # this action will start the segmentation.
                 # First of all, it will check that a name for the flair and t1 is provided,

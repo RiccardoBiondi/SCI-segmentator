@@ -1,6 +1,7 @@
 from gui.locale.loader import load_language
 from gui.main_window import MainWindow
 import logging
+import FreeSimpleGUI as sg
 
 __author__ = ["Riccardo Biondi"]
 __email__ = ["riccardo.biondi7@unibo.it"]
@@ -17,7 +18,6 @@ def main():
     string = load_language("en")
 
     window = MainWindow(config={}, string=string)
-
     window.run()
 
 if __name__ == "__main__":
