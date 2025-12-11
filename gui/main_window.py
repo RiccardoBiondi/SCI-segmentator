@@ -111,7 +111,7 @@ class MainWindow:
                 self.preview_panel.update_preview(window, display_entity.image, idx=display_entity.slider_range // 2)
 
             if event == "-SLIDER-":
-                self.preview_panel.update_preview(window, display_entity.image, idx=int(values["-SLIDER-"]))
+                self.preview_panel.update_preview(window, display_entity.image, idx=int(values["-SLIDER-"]) - 1)
 
                 # --- aggiorna dati paziente ---
             if event in ["-DROPDOWN_FLAIR-", "-DROPDOWN_T1W-"]:

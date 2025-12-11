@@ -5,7 +5,7 @@ import argparse
 from typing import List, Tuple
 import FreeSimpleGUI as sg
 
-from gui.panels.popups import PopupProgressBar
+#from gui.panels.popups import PopupProgressBar
 
 ImageType = itk.Image[itk.F, 3]
 
@@ -33,6 +33,7 @@ def _read_dicom_study(folder: str, logger=logging):
     #with PopupProgressBar(bar_max=len(seriesUIDs), title="Loading DICOM Series", text="Loaded Series") as pb:
     for i, seriesUID in enumerate(seriesUIDs):
         
+        logging.info(f"Loading Series {seriesUID}")
         sg.one_line_progress_meter("Loading DICOM Series", i+1, len(seriesUIDs))
         
         try:

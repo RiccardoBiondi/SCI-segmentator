@@ -38,6 +38,6 @@ class DisplayITKImageEntity:
 
             # TODO: implement also to consider the 2D case
             if len(self._image.shape) == 3:
-                self._slider_range = self._image.shape[0] // 2
+                self._slider_range = self._image.shape[0]
         except:
             self.reset()
