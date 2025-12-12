@@ -3,9 +3,9 @@ import itk
 import logging
 import argparse
 
-from core.filters import itk_resample_onto_reference
-from core.filters import infer_itk_image_type
-from core.filters import itk_clamp
+from sci_segmentator.core.filters import itk_resample_onto_reference
+from sci_segmentator.core.filters import infer_itk_image_type
+from sci_segmentator.core.filters import itk_clamp
 
 LOG_LEVELS = {
     0: logging.ERROR,
@@ -109,13 +109,29 @@ INTERPOLATORS = {
     "bspline": itk_spline_interpolator,
 }
 
+
+def run(image: itk.Image, reference: itk.Image, interpolator: str, clamp: bool = True, logger=logging) -> itk.Image:
+    
+    logger.debug("Retrieve input type")
+    input_type = infer_itk_image_type(image, None)
+    logger.debug(f"Instantiate {interpolator} interpolator object")
+    interpolator_ = INTERPOLATORS[interpolator](input_type)
+    logger.debug("Resample Image")
+    resampled = itk_resample_onto_reference(image=image, reference=reference, interpolator=interpolator_)
+    
+    if clamp:
+        logger.debug("Clamping image in 0-1")
+        resampled = itk_clamp(resampled.GetOutput())
+    return resampled
+
+
 def main():
 
 
     args = parse_args()
     logging.basicConfig(level=LOG_LEVELS[min(args.verbose, 3)])
 
-    logger.info(f"Reading Image to Normalize from {args.input}")
+    logger.info(f"Reading Image to Resample from {args.input}")
     image = itk.imread(args.input, itk.F)
     input_type = infer_itk_image_type(image, None)
 

@@ -61,7 +61,7 @@ class MainWindow:
         # TODO Bind the logic in some internal class functions, in order to clean up the code
 
         # Create the window
-        window = sg.Window(self.string["MainTitle"], self._layout, resizable=True, icon="/home/briccardo/codes/github/RiccardoBiondi/SCI-Segmentator/fixtures/icon.ico")
+        window = sg.Window(self.string["MainTitle"], self._layout, resizable=True, icon="/home/briccardo/codes/github/RiccardoBiondi/SCI-Segmentator/fixtures/icon.png")
 
 
         # now create the instance of the main GUI entities
@@ -108,6 +108,7 @@ class MainWindow:
                 series_uid = values["-SERIES_LIST-"][0] if len(values["-SERIES_LIST-"]) != 0 else None
                 display_entity.update(input_entity[series_uid])
                 self.preview_panel.slider_range = display_entity.slider_range
+
                 self.preview_panel.update_preview(window, display_entity.image, idx=display_entity.slider_range // 2)
 
             if event == "-SLIDER-":
@@ -123,7 +124,17 @@ class MainWindow:
                     if segmentation_entity.status:
                         segmentation_entity.reset()
                     segmentation_entity.update(t1=input_entity[values["-DROPDOWN_T1W-"]], flair=input_entity[values["-DROPDOWN_FLAIR-"]])
+                    
                     window["-POSTPROCESS-"].update(disabled= not segmentation_entity.status)
+
+                    # and update also the visualization bar
+                    display_entity.update_overlay(segmentation_entity.output)
+                    display_entity.update(input_entity[values["-DROPDOWN_FLAIR-"]])
+                    self.preview_panel.slider_range = display_entity.slider_range
+                    self.preview_panel.update_preview(window, display_entity.image, idx=display_entity.slider_range // 2)
+
+
+
                 
                 # this action will start the segmentation.
                 # First of all, it will check that a name for the flair and t1 is provided,

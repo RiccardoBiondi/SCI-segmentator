@@ -42,10 +42,6 @@ class ImagePreviewPanel:
                 [sg.Image(key="-PREVIEW-", size=(512, 512), expand_x=True, expand_y=True)],
                 [self._slider]
                 ]
-        
-        overlay_panel = []
-        function_panel = []
-
 
         layout = [
             [sg.Frame(self.string["Title"], preview_panel)],
@@ -59,9 +55,6 @@ class ImagePreviewPanel:
         '''
 
         frame = image[idx]
-
-        frame = to_png_bytes(frame.astype(np.uint8), (512, 512))
-
         window["-SLIDER-"].update(value=int(idx))
         window["-PREVIEW-"].update(data=frame)
 

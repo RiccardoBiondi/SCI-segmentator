@@ -32,8 +32,9 @@ def run(flair: itk.Image, model_list: List[str], logger=logging) -> itk.Image:
     results = itk.GetImageFromArray(results)
     _ = results.SetSpacing(flair.GetSpacing()) 
     _ = results.SetOrigin(flair.GetOrigin()) 
-    _ = results.SetDirection(flair.GetDirection()) 
-    itk.imwrite(results, "/DATA/seg_test.nii.gz")
+    _ = results.SetDirection(flair.GetDirection())
+
+
     return results
 
 

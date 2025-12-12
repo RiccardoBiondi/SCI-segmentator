@@ -987,6 +987,56 @@ def itk_binary_dilate(image, radius=1, foreground_value=1,
 
     return dilate
 
+@update
+def itk_binary_erode(image, radius=1, foreground_value=1,
+                      background_value=0, input_type=None, output_type=None,
+                      **kwargs):
+    '''
+    Erode a binary image using a ball kernel of the same dimension of the
+    image volume.
+
+    Parameters
+    ----------
+    image: itk.Image
+        binary image to erode
+    radius: int
+        radius of the ball kernel
+    foreground_value: voxel type
+        Intensity value to erode
+    background_value: voxel type
+        Replacement Value
+    input_type : itk.Image type (i.e.itk.Image[itk.UC, 2])
+         input image type. If not specified it is inferred from the input image
+    output_type : itk.Image type (i.e.itk.Image[itk.UC, 2])
+         output image type. If not specified it is iferred from the input image
+    kwargs:
+        keyword arguments to control the behaviour of deorators
+
+    Results
+    -------
+    erode: itk.BinaryErodeImageFilter
+        itk.BinaryErodeImageFilter instance. As default the instance is updated
+        To not update the instance pecify update=False as kwargs.
+    '''
+    # TODO: add a way to chose the kind of structuring element
+    _, dimension = itk.template(image)[1]
+    InputType = infer_itk_image_type(image, input_type)
+    OutputType = infer_itk_image_type(image, output_type)
+
+    logging.debug(f'Binary Erosion with a Ball Kernel of \
+                    Dimension {dimension} and Radius: {radius}')
+
+    StructuringElementType = itk.FlatStructuringElement[dimension]
+    structuring_element = StructuringElementType.Ball(radius)
+
+    ErodeFilterType = itk.BinaryErodeImageFilter[InputType, OutputType, StructuringElementType]
+    erode = ErodeFilterType.New()
+    erode.SetInput(image)
+    erode.SetKernel(structuring_element)
+    erode.SetForegroundValue(foreground_value)  # Intensity value to erode
+    erode.SetBackgroundValue(background_value)  #
+
+    return erode
 
 
 @update
@@ -1031,3 +1081,16 @@ def itk_subtract(
     _ = subtract_image.SetInput2(image2)
 
     return subtract_image
+
+
+@update
+def itk_binary_fill_hole(image, foreground_value=1, fully_connected: bool = False, input_type=None, **kwargs) -> itk.BinaryFillholeImageFilter:
+
+    input_image_type = infer_itk_image_type(image, input_type)
+
+    filter_ =  itk.BinaryFillholeImageFilter[input_image_type].New()
+    _ = filter_.SetForegroundValue(foreground_value)
+    _ = filter_.SetFullyConnected(fully_connected)
+    _ = filter_.SetInput(image)
+
+    return filter_
