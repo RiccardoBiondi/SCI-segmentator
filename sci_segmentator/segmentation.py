@@ -9,7 +9,17 @@ import FreeSimpleGUI as sg
 
 EP_list = ['CUDAExecutionProvider', 'CPUExecutionProvider']
 
+so = ort.SessionOptions()
+so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+so.enable_mem_pattern = True
+so.enable_cpu_mem_arena = False
+so.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+so.intra_op_num_threads = 1
+
+
 def run(flair: itk.Image, model_list: List[str], logger=logging) -> itk.Image:
+
+    # configuring ONNX inference to avoid memory leack
     
     logger.debug("Converting input flair image to tensor")
     tensor = itk.GetArrayFromImage(flair)[..., np.newaxis]
@@ -19,8 +29,9 @@ def run(flair: itk.Image, model_list: List[str], logger=logging) -> itk.Image:
     for i, model in enumerate(model_list):
         logger.debug(f"Segmenting with {i + 1}-th model: {model}")
         sg.one_line_progress_meter("Perform Sagmentation", i+1, len(model_list))
-        sess = ort.InferenceSession( model, providers=EP_list)
-        res = sess.run([sess.get_outputs()[0].name], {sess.get_inputs()[0].name: tensor})[0]
+        sess = ort.InferenceSession( model, so, providers=EP_list)
+        res = np.concatenate([sess.run([sess.get_outputs()[0].name], {sess.get_inputs()[0].name: tn[np.newaxis]})[0] for tn in tensor])
+        logging.debug(f"{i+1}-th prediction tensor shape: {res.shape}")
         results.append(res)
 
     results = np.asarray(results)
