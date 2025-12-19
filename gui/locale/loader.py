@@ -7,11 +7,9 @@ __author__ = ["Riccardo Biondi"]
 __email__ = ["riccardo.biondi7@unibo.it"]
 
 
-def load_language(language: str = "it"):# -> Dict[str]:
+def load_language(language: str = "it", here: str = "."):# -> Dict[str]:
     '''
     '''
-
-    here = os.path.dirname(os.path.abspath(__file__))
 
     with open(os.path.join(here, f"{language}.yaml")) as stream:
         try:

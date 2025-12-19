@@ -7,10 +7,10 @@ import FreeSimpleGUI as sg
 
 #from gui.panels.popups import PopupProgressBar
 
-ImageType = itk.Image[itk.F, 3]
 
 def _read_dicom_study(folder: str, logger=logging):
 
+    ImageType = itk.Image[itk.F, 3]
     logging.info(f"Parsing DICOM Series in {folder}")
     namesGenerator = itk.GDCMSeriesFileNames.New()
     namesGenerator.SetUseSeriesDetails(True)

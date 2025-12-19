@@ -13,11 +13,9 @@ from gui.core.atlas_entity import AtalasEntity
 from gui.core.registration_entity import RegistrationEntity
 from gui.core.post_processing_entity import PostProcessingEntity
 
-import threading
-from time import sleep
 
-from sci_segmentator.core.loader import _read_dicom_study
-from gui.utilities import _format_image_metadata, _series_display_names_from_metadata
+#from sci_segmentator.core.loader import _read_dicom_study
+#from gui.utilities import _format_image_metadata, _series_display_names_from_metadata
 
 
 
@@ -65,15 +63,15 @@ class MainWindow:
         # TODO Bind the logic in some internal class functions, in order to clean up the code
 
         # Create the window
-        window = sg.Window(self.string["MainTitle"], self._layout, resizable=True, icon="/home/briccardo/codes/github/RiccardoBiondi/SCI-Segmentator/fixtures/icon.png")
+        window = sg.Window(self.string["MainTitle"], self._layout, resizable=True, icon=os.path.join(self.config["basedir"], "fixtures", "icon.ico"))
 
 
         # now create the instance of the main GUI entities
 
         input_entity = InputEntity()
         display_entity = DisplayITKImageEntity()
-        segmentation_entity = SegmentatorEntity()
-        atlas_entity = AtalasEntity("/home/briccardo/codes/github/RiccardoBiondi/SCI-segmentator/fixtures")
+        segmentation_entity = SegmentatorEntity(os.path.join(self.config["basedir"], "fixtures"))
+        atlas_entity = AtalasEntity(os.path.join(self.config["basedir"], "fixtures"))
         postprocess_entity = PostProcessingEntity()
         atlas_onto_t1_regstration_entity = RegistrationEntity()
 
@@ -86,20 +84,18 @@ class MainWindow:
                 break
 
             if event == "-FOLDER-":
-
                 #  first of all, if a current status is present, reset all.
                 if input_entity.status:
                     _ = input_entity.reset()
                     _ = display_entity.reset()
                     _ = segmentation_entity.reset()
-
+                    
 
                 folder = values["-FOLDER-"]
 
                 if os.path.isdir(folder): # TODO Incorporate this condition inside the input entity
-                    # --- aggiorna serie ---
+            #        # --- aggiorna serie ---
                     input_entity.update(folder)
-                    
                     #Here update all the required fields
                     window["-SERIES_LIST-"].update(values=input_entity.series_names)
                     window["-DROPDOWN_FLAIR-"].update(values=input_entity.series_names)
@@ -116,12 +112,11 @@ class MainWindow:
                 display_entity.update(input_entity[series_uid])
                 self.preview_panel.slider_range = display_entity.slider_range
 
-                self.preview_panel.update_preview(window, display_entity.image, idx=display_entity.slider_range // 2)
-
+            #    self.preview_panel.update_preview(window, display_entity.image, idx=display_entity.slider_range // 2)
             if event == "-SLIDER-":
                 self.preview_panel.update_preview(window, display_entity.image, idx=int(values["-SLIDER-"]) - 1)
 
-                # --- aggiorna dati paziente ---
+            # --- aggiorna dati paziente ---
             if event in ["-DROPDOWN_FLAIR-", "-DROPDOWN_T1W-"]:
                 segmentation_entity.is_executable =  ((values["-DROPDOWN_FLAIR-"] != "") &( values["-DROPDOWN_T1W-"] != "")) & ((values["-DROPDOWN_T1W-"] != values["-DROPDOWN_FLAIR-"]))
                 window["-SEGMENT-"].update(disabled=not segmentation_entity.is_executable)
@@ -131,12 +126,12 @@ class MainWindow:
                     if segmentation_entity.status:
                         segmentation_entity.reset()
                     segmentation_entity.update(t1=input_entity[values["-DROPDOWN_T1W-"]], flair=input_entity[values["-DROPDOWN_FLAIR-"]])
-                    
+
                     atlas_entity.update()
 
                     if atlas_entity.status:
                         atlas_onto_t1_regstration_entity.update(moving=atlas_entity["MNI152Atlas"], fixed=input_entity[values["-DROPDOWN_T1W-"]], registration_params={"transforms": ["rigid", "affine", "bspline"]})
-                         # apply registration transforms to map atals onto t1
+                        # apply registration transforms to map atals onto t1
                         atlas_entity.apply_transforms(params=atlas_onto_t1_regstration_entity.params)
                         postprocess_entity.update(segmentation_entity, atlas_entity)
 
@@ -150,12 +145,11 @@ class MainWindow:
                         window["-ACA_NUMBER-"].update(postprocess_entity.stats["aca_lesions"])
                         window["-MCA_NUMBER-"].update(postprocess_entity.stats["mca_lesions"])
                         window["-PCA_NUMBER-"].update(postprocess_entity.stats["pca_lesions"])
-                    
+            #        
                     window["-SAVE-"].update(disabled=not postprocess_entity.status)
-
+#
             if event == '-SAVE-':
                 filepath = sg.popup_get_file('Salva file', save_as=True, no_window=True)
                 if filepath:
-                    print(filepath)
                     postprocess_entity.save(filepath)
         window.close()

@@ -72,7 +72,6 @@ class InputEntity:
         """
         Read the foldeer and initialize 
         """
-
         # read DICOM
 
         try:
@@ -80,18 +79,18 @@ class InputEntity:
             
             self._image_lut = {metadata["0020|000e"] :  itk_cast(itk_orient_image_to_axial(image).GetOutput(), itk.F).GetOutput() for image, metadata in zip(images, metadatas)}
             self._series_lut = {_series_display_names_from_metadata(metadata) : metadata["0020|000e"] for metadata in metadatas}
-
+#
             self._series_names = sorted(list(self._series_lut.keys()))
-
-            # now create the patient data dict
-            
+#
+        #    # now create the patient data dict
+        #    
             self.patient_data["-PATIENT_NAME-"] = metadatas[0]["0010|0010"]
             self.patient_data["-PATIENT_AGE-"] = "N/A"
             self.patient_data["-PATIENT_SEX-"] = metadatas[0]["0010|0040"]
             self.patient_data["-STUDY_DATE-"] = metadatas[0]["0008|0020"]
-
-
-            self._status = True
+#
+#
+        #    self._status = True
         except Exception as e:
             logging.error(e)
             self.reset()            

@@ -10,9 +10,11 @@ class SegmentatorEntity:
     """
     """
 
-    def __init__(self):
+    def __init__(self, model_path: str = "./"):
         """
         """
+
+        self._model_path =  model_path
         self.reset()
 
     @property
@@ -62,7 +64,7 @@ class SegmentatorEntity:
             self._flair = flair
             seg_input = preprocess.run(flair=flair, t1=t1)
             #itk.imwrite(seg_input.GetOutput(), "/DATA/flair_test.nii.gz")
-            self._output = segmentation.run(seg_input.GetOutput(), model_list=["./fixtures/ensamble_0.onnx"])#, "./fixtures/ensamble_1.onnx"])#, "./fixtures/ensamble_2.onnx", "./fixtures/ensamble_3.onnx", "./fixtures/ensamble_4.onnx"])
+            self._output = segmentation.run(seg_input.GetOutput(), model_list=[os.path.join(self._model_path, "ensamble_0.onnx")])#, "./fixtures/ensamble_1.onnx"])#, "./fixtures/ensamble_2.onnx", "./fixtures/ensamble_3.onnx", "./fixtures/ensamble_4.onnx"])
             ## resampling output imgae onto reference flair
             #itk.imwrite(self._output, "/DATA/seg_test.nii.gz")
             self._output = resample_onto_reference.run(self._output, flair, clamp=True, interpolator="bspline").GetOutput()

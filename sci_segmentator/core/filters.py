@@ -63,7 +63,7 @@ def update(func):
     return wrapper
 
 
-def infer_itk_image_type(image: itk.Image, desidered_type=None):
+def infer_itk_image_type(image, desidered_type=None):
     '''
     Infer the desidered image type: if default type is None, will return the
     type of the specified image, otherwise will return desidered_type
@@ -93,7 +93,7 @@ s
 
 
 @update
-def itk_orient_image_to_axial(image: itk.Image, **kwargs):
+def itk_orient_image_to_axial(image, **kwargs):
     """
     Change the image orientation to axial one, closer to RIS
     """
@@ -1045,7 +1045,7 @@ def itk_subtract(
                 input1_type=None,
                 input2_type=None,
                 output_type=None, **kwargs
-                ) -> itk.SubtractImageFilter:
+                ):
     '''
     Subtract two itk images. Images must heve the same size and physical space.
 
@@ -1084,7 +1084,7 @@ def itk_subtract(
 
 
 @update
-def itk_binary_fill_hole(image, foreground_value=1, fully_connected: bool = False, input_type=None, **kwargs) -> itk.BinaryFillholeImageFilter:
+def itk_binary_fill_hole(image, foreground_value=1, fully_connected: bool = False, input_type=None, **kwargs):
 
     input_image_type = infer_itk_image_type(image, input_type)
 
