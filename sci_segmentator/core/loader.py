@@ -14,6 +14,7 @@ def _read_dicom_study(folder: str, logger=logging):
     logging.info(f"Parsing DICOM Series in {folder}")
     namesGenerator = itk.GDCMSeriesFileNames.New()
     namesGenerator.SetUseSeriesDetails(True)
+    namesGenerator.RecursiveOn()
     namesGenerator.AddSeriesRestriction("0008|0021")
     namesGenerator.SetGlobalWarningDisplay(False)
     namesGenerator.SetDirectory(folder)
