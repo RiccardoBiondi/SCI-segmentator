@@ -5,17 +5,17 @@ import argparse
 import numpy as np
 import pandas as pd
 
-from core.filters import itk_resample
-from core.filters import infer_itk_image_type
-from core.filters import itk_binary_threshold
-from core.filters import itk_connected_components
-from core.filters import itk_relabel_components
-from core.filters import itk_label_shape_statistics
-from core.filters import itk_label_statistics
-from core.filters import itk_cast
-from core.filters import itk_binary_dilate
-from core.filters import itk_subtract
-from core.filters import itk_or
+from sci_segmentator.core.filters import itk_resample
+from sci_segmentator.core.filters import infer_itk_image_type
+from sci_segmentator.core.filters import itk_binary_threshold
+from sci_segmentator.core.filters import itk_connected_components
+from sci_segmentator.core.filters import itk_relabel_components
+from sci_segmentator.core.filters import itk_label_shape_statistics
+from sci_segmentator.core.filters import itk_label_statistics
+from sci_segmentator.core.filters import itk_cast
+from sci_segmentator.core.filters import itk_binary_dilate
+from sci_segmentator.core.filters import itk_subtract
+from sci_segmentator.core.filters import itk_or
 
 
 LOG_LEVELS = {
@@ -136,8 +136,38 @@ def create_image(reference):
     return image
 
 
-def run(input_image, features, activation_threshold):
-    ...
+def run(input_image: itk.Image, features: pd.DataFrame, activation_threshold: float = 0.2) -> itk.Image:
+    
+    
+    logger.debug(f"Apply activation threshold of: {activation_threshold}")
+    image = itk_binary_threshold(input_image, upper_thr=1.1, lower_thr=activation_threshold)
+    logger.debug("Identify all the unique lesions")
+    image = itk_cast(image.GetOutput(), itk.SS)
+    image = itk_connected_components(image.GetOutput(), fully_connected=True)
+    image = itk_relabel_components(image.GetOutput())
+    image = image.GetOutput()
+
+    logger.debug(f"Starting from {features.shape[0]} lesions")
+    logger.debug("Start Featrure Selection from lesion")
+    df = remove_false_positives(features, lesion_volume=5.65, lesion_voxels=4, exclusion_volume=700, exclusion_percentage=0.30, wm_boundary_percentage=.8)
+    logger.debug(f"Selected {df.shape[0]} lesions")
+
+
+    logger.debug("Create the final image template")
+    final = create_image(image)
+
+    logger.debug("Start lesion selection")
+
+    for ls in df["lesion_id"].values:
+        
+        logger.debug(f"Selecting lesion with id {ls}")
+        lesion = itk_binary_threshold(image, lower_thr=int(ls), upper_thr=int(ls))
+        lesion = itk_cast(lesion.GetOutput(), itk.UC)
+
+        final = itk_or(final, lesion.GetOutput())
+        final = final.GetOutput()
+        
+    return final
 
 
 def main():
@@ -149,40 +179,13 @@ def main():
     logger.info("Reading input activation map")
     image = itk.imread(args.input, itk.F)
     
-    logger.info(f"Apply activation threshold of: {args.activation_threshold}")
-    image = itk_binary_threshold(image, upper_thr=1.1, lower_thr=args.activation_threshold)
-    logger.info("Identify all the unique lesions")
-    image = itk_cast(image.GetOutput(), itk.SS)
-    image = itk_connected_components(image.GetOutput(), fully_connected=True)
-    image = itk_relabel_components(image.GetOutput())
-    image = image.GetOutput()
-
     logger.info(f"Read Features From: {args.features}")
     df = pd.read_csv(args.features, sep=",")
-
-    logger.info(f"Starting from {df.shape[0]} lesions")
-    logger.info("Start Featrure Selection from lesion")
-    df = remove_false_positives(df, lesion_volume=5.65, lesion_voxels=4, exclusion_volume=700, exclusion_percentage=0.30, wm_boundary_percentage=.8)
-    logger.info(f"Selected {df.shape[0]} lesions")
-
-
-    logger.info("Create the final image template")
-    final = create_image(image)
-
-    logger.info("Start lesion selection")
-
-    for ls in df["lesion_id"].values:
-        
-        logger.info(f"Selecting lesion with id {ls}")
-        lesion = itk_binary_threshold(image, lower_thr=int(ls), upper_thr=int(ls))
-        lesion = itk_cast(lesion.GetOutput(), itk.UC)
-
-        final = itk_or(final, lesion.GetOutput())
-        final = final.GetOutput()
+    final = run(image, df, args.activation_threshold)
 
     logger.info(f"Writing result to {args.output}")
 
-    itk.imwrite(final, args.output)
+    itk.imwrite(final.GetOutput(), args.output)
 
     #image_arr = 
     #final = np.zeros(pred_arr.shape, dtype=np.uint8)

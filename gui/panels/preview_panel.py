@@ -2,6 +2,7 @@
 import FreeSimpleGUI as sg
 import numpy as np
 from gui.utilities import to_png_bytes
+from PIL import Image
 
 __author__ = ["Riccardo Biondi"]
 __email__ = ["riccardo.biondi7@unibo.it"]
@@ -54,7 +55,7 @@ class ImagePreviewPanel:
         '''
         '''
 
-        frame = image[idx]
+        frame = to_png_bytes(image[idx], size=(512, 512))
         window["-SLIDER-"].update(value=int(idx))
         window["-PREVIEW-"].update(data=frame)
 

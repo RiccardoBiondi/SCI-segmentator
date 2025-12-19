@@ -8,6 +8,8 @@ from sci_segmentator.core.filters import itk_orient_image_to_axial
 from sci_segmentator.core.filters import itk_multi_otsu_threshold
 from sci_segmentator.core.filters import itk_cast
 
+from memory_profiler import profile
+from typing import List
 __author__ = ["Riccardo Biondi", "Nicolas Biondini"]
 __email__ = ["riccardo.biondi7@unibo.it", "nicolas.biondini2@unibo.it"]
 
@@ -123,6 +125,15 @@ def parse_args():
     return args
 
 
+@profile
+def actual_registration(moving, fixed, modalities=["rigid", "affine"], metric="AdvancedMattesMutualInformation", resolutions=4, combine_parameters="Compose"):
+
+    parameter_map = get_multimap_parameters(metric=metric, resolutions=resolutions, modalities=modalities, transform_combination=combine_parameters, initial_tranform=False)
+
+    _, transform_parameters = itk.elastix_registration_method(fixed, moving, parameter_object=parameter_map, log_to_console=False)
+    return transform_parameters, parameter_map
+
+
 def indirect_registration(moving, fixed, modalities=["rigid", "affine"], metric="AdvancedMattesMutualInformation", resolutions=4, combine_parameters="Compose", logger=logging):
     """
     """
@@ -166,7 +177,7 @@ def align_image_centroids(moving, fixed):
     return resampler.GetOutput()
 
 
-def run(moving, fixed, indirect, transforms, resolutions, metrics, combination, logger):
+def run(moving, fixed, indirect: bool = False, transforms: List[str] = ["rigid"], resolutions: int = 4, metrics: str = "AdvancedMattesMutualInformation", combination: str = "Compose", logger=logging):
 
     if indirect:
         logger.info("Running Indirect Registration")        

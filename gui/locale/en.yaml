@@ -13,10 +13,20 @@ Loader:
   Exit: "Exit"
   ImageSelector: "Input"
   Segment: "Segment"
-  PostProcess: "PostProcess"
+  Save: "Save"
 
 ImagePreview:
   Title: "Image Preview"
 
+
 Stats:
-  Title: "placeholder"
+  GeneralTitle: "General"
+  InvolvmentTitle: "Involvment (%)"
+  NumberTitle: "Number of Lesions"
+  LesionBurden: "Lesion Burden (mm^3)"
+  NumberOfLesions: "Number of Lesions"
+  Brain: "Brain"
+  WhiteMatter: "White Matter"
+  ACA: "ACA"
+  MCA: "MCA"
+  PCA: "PCA"

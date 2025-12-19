@@ -5,9 +5,13 @@ import FreeSimpleGUI as sg
 from gui.panels.loading_panel import LoadingPanel
 from gui.panels.preview_panel import ImagePreviewPanel
 from gui.panels.stats_panel   import SegmentationStatsPanel
+
 from gui.core.input_entity import InputEntity
 from gui.core.display_entity import DisplayITKImageEntity
 from gui.core.segmentation_entity import SegmentatorEntity
+from gui.core.atlas_entity import AtalasEntity
+from gui.core.registration_entity import RegistrationEntity
+from gui.core.post_processing_entity import PostProcessingEntity
 
 import threading
 from time import sleep
@@ -69,6 +73,9 @@ class MainWindow:
         input_entity = InputEntity()
         display_entity = DisplayITKImageEntity()
         segmentation_entity = SegmentatorEntity()
+        atlas_entity = AtalasEntity("/home/briccardo/codes/github/RiccardoBiondi/SCI-segmentator/fixtures")
+        postprocess_entity = PostProcessingEntity()
+        atlas_onto_t1_regstration_entity = RegistrationEntity()
 
         # Display and interact with the Window using an Event Loop
         while True:
@@ -125,23 +132,30 @@ class MainWindow:
                         segmentation_entity.reset()
                     segmentation_entity.update(t1=input_entity[values["-DROPDOWN_T1W-"]], flair=input_entity[values["-DROPDOWN_FLAIR-"]])
                     
-                    window["-POSTPROCESS-"].update(disabled= not segmentation_entity.status)
+                    atlas_entity.update()
 
-                    # and update also the visualization bar
-                    display_entity.update_overlay(segmentation_entity.output)
-                    display_entity.update(input_entity[values["-DROPDOWN_FLAIR-"]])
-                    self.preview_panel.slider_range = display_entity.slider_range
-                    self.preview_panel.update_preview(window, display_entity.image, idx=display_entity.slider_range // 2)
+                    if atlas_entity.status:
+                        atlas_onto_t1_regstration_entity.update(moving=atlas_entity["MNI152Atlas"], fixed=input_entity[values["-DROPDOWN_T1W-"]], registration_params={"transforms": ["rigid", "affine", "bspline"]})
+                         # apply registration transforms to map atals onto t1
+                        atlas_entity.apply_transforms(params=atlas_onto_t1_regstration_entity.params)
+                        postprocess_entity.update(segmentation_entity, atlas_entity)
 
+                        window["-LESION_BURDEN-"].update(postprocess_entity.stats["lesion_burden"])
+                        window["-NUMBER_OF_LESIONS-"].update(postprocess_entity.stats["number_of_lesions"])
+                        window["-BRAIN_INVOLVMENT-"].update(postprocess_entity.stats["brain_involvment"])
+                        window["-WM_INVOLVMENT-"].update(postprocess_entity.stats["wm_involvment"])
+                        window["-ACA_INVOLVMENT-"].update(postprocess_entity.stats["aca_involvment"])
+                        window["-MCA_INVOLVMENT-"].update(postprocess_entity.stats["mca_involvment"])
+                        window["-PCA_INVOLVMENT-"].update(postprocess_entity.stats["pca_involvment"])
+                        window["-ACA_NUMBER-"].update(postprocess_entity.stats["aca_lesions"])
+                        window["-MCA_NUMBER-"].update(postprocess_entity.stats["mca_lesions"])
+                        window["-PCA_NUMBER-"].update(postprocess_entity.stats["pca_lesions"])
+                    
+                    window["-SAVE-"].update(disabled=not postprocess_entity.status)
 
-
-                
-                # this action will start the segmentation.
-                # First of all, it will check that a name for the flair and t1 is provided,
-                # It will also check if the ids are different, since T1 and FLAIR are stored in different series
-
-                    # chiamo la funzione per fare il preprocessing
-#                    out = preprocess.run(flair=image_lut[series_lut[values["-DROPDOWN_FLAIR-"]]][0], t1=image_lut[series_lut[values["-DROPDOWN_T1W-"]]][0])
-#                    print(out)
-        # Finish up by removing from the screen
-#        window.close()
+            if event == '-SAVE-':
+                filepath = sg.popup_get_file('Salva file', save_as=True, no_window=True)
+                if filepath:
+                    print(filepath)
+                    postprocess_entity.save(filepath)
+        window.close()

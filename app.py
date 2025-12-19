@@ -12,7 +12,7 @@ def main():
     # here read the configuration and the chosen language
 
 
-    log_level = logging.INFO#[min(args.verbosity, max(log_levels.keys()))]
+    log_level = logging.DEBUG#[min(args.verbosity, max(log_levels.keys()))]
     log_format = '%(asctime)s - %(name)s -  %(levelname)s - %(message)s'
     logging.basicConfig(level=log_level, format=log_format)
     string = load_language("en")

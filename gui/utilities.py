@@ -38,8 +38,8 @@ def _series_display_names_from_metadata(metadata: Dict[str, str]) -> str:
 
 
 def to_png_bytes(image_2d, size: Tuple[int, int]):
-    #img = Image.fromarray(image_2d)#.convert("L")
-    img = image_2d.resize(size, Image.Resampling.LANCZOS).convert("L")
+    img = Image.fromarray(image_2d)#.convert("L")
+    img = img.resize(size=size, resample=Image.Resampling.LANCZOS).convert("L")
 
     with io.BytesIO() as output:
         img.save(output, format="PNG")

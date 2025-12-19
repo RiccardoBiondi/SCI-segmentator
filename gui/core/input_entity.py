@@ -1,9 +1,12 @@
 import os
 import itk
+import logging
 from sci_segmentator.core.loader import _read_dicom_study
 from sci_segmentator.core.filters import  itk_orient_image_to_axial
-from gui.utilities import _format_image_metadata, _series_display_names_from_metadata
+from sci_segmentator.core.filters import  itk_cast
 
+from gui.utilities import _format_image_metadata, _series_display_names_from_metadata
+from functools import cache
 from typing import NoReturn, List, Dict
 
 __author__ = ["Riccardo Biondi"]
@@ -23,7 +26,6 @@ class InputEntity:
     def __init__(self):
         """
         """
-
         self.reset()
 
     def __getitem__(self, id_str: str):
@@ -76,7 +78,7 @@ class InputEntity:
         try:
             images, metadatas = _read_dicom_study(folder)
             
-            self._image_lut = {metadata["0020|000e"] :  itk_orient_image_to_axial(image).GetOutput() for image, metadata in zip(images, metadatas)}
+            self._image_lut = {metadata["0020|000e"] :  itk_cast(itk_orient_image_to_axial(image).GetOutput(), itk.F).GetOutput() for image, metadata in zip(images, metadatas)}
             self._series_lut = {_series_display_names_from_metadata(metadata) : metadata["0020|000e"] for metadata in metadatas}
 
             self._series_names = sorted(list(self._series_lut.keys()))
@@ -90,6 +92,6 @@ class InputEntity:
 
 
             self._status = True
-        except:
-            pass
-        
+        except Exception as e:
+            logging.error(e)
+            self.reset()            

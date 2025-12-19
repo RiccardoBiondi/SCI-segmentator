@@ -64,7 +64,7 @@ class LoadingPanel:
                     [sg.Frame(self.string["ImageSelector"], dropdown_menu )]
                 ])
             ],
-            [sg.Button(self.string["Segment"],  disabled=True, key="-SEGMENT-"), sg.Button(self.string["PostProcess"],  key="-POSTPROCESS-", disabled=True)]
+            [sg.Button(self.string["Segment"],  disabled=True, key="-SEGMENT-"), sg.Button(self.string["Save"],  key="-SAVE-", disabled=True)]
         ]
 
         return layout

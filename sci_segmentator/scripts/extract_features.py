@@ -5,14 +5,14 @@ import argparse
 import numpy as np
 import pandas as pd
 
-from core.filters import itk_binary_threshold
-from core.filters import itk_connected_components
-from core.filters import itk_relabel_components
-from core.filters import itk_label_shape_statistics
-from core.filters import itk_label_statistics
-from core.filters import itk_cast
-from core.filters import itk_binary_dilate
-from core.filters import itk_subtract
+from sci_segmentator.core.filters import itk_binary_threshold
+from sci_segmentator.core.filters import itk_connected_components
+from sci_segmentator.core.filters import itk_relabel_components
+from sci_segmentator.core.filters import itk_label_shape_statistics
+from sci_segmentator.core.filters import itk_label_statistics
+from sci_segmentator.core.filters import itk_cast
+from sci_segmentator.core.filters import itk_binary_dilate
+from sci_segmentator.core.filters import itk_subtract
 
 LOG_LEVELS = {
     0: logging.ERROR,
@@ -106,6 +106,61 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+
+def run(input: itk.Image, white_matter: itk.Image, exclusion_region: itk.Image, activation_threshold: float = 0.2, logger = logging) -> pd.DataFrame:
+    
+    logger.debug(f"Binarizing activation map with threshold {activation_threshold}")
+    image = itk_binary_threshold(input, upper_thr=1.1, lower_thr=activation_threshold)
+    logger.debug("Identify all the unique lesions")
+    image = itk_cast(image.GetOutput(), itk.SS)
+    image = itk_connected_components(image.GetOutput(), fully_connected=True)
+    image = itk_relabel_components(image.GetOutput())
+
+    logger.debug("Estimating Lesion Volume")
+    
+    physical_size = image.GetSizeOfObjectsInPhysicalUnits()
+    number_of_voxels = image.GetSizeOfObjectsInPixels()
+    label_idxs = np.arange(1, image.GetNumberOfObjects() + 1)
+
+    logger.debug(f"Found a total of {image.GetNumberOfObjects()} lesions")
+
+
+    border = image.GetOutput()
+
+    for i in label_idxs:
+        border = itk_binary_dilate(border, foreground_value=int(i))
+        border = border.GetOutput()
+
+    border = itk_subtract(border, image.GetOutput())
+
+    logger.debug("Estimating White Matter Fraction")
+
+    wm_stats = itk_label_statistics(white_matter, border.GetOutput())
+    wm_fraction = [wm_stats.GetMean(int(i)) for i in label_idxs]
+    
+
+    logger.debug("Estimating Exclusion Region Fraction")
+    ex_stats = itk_label_statistics(exclusion_region, image.GetOutput())
+    ex_fraction = [ex_stats.GetMean(int(i)) for i in label_idxs]
+    
+    logger.debug("Creating the Features dataset")
+
+    df = pd.DataFrame(data={
+        "lesion_id": label_idxs,
+        "lesion_volume_mm3": physical_size,
+        "lesion_volume_vx": number_of_voxels,
+        "surrounding_wm_fraction": wm_fraction,
+        "exclusion_region_fraction": ex_fraction
+    })
+
+
+    return df
+
+
+
+    
+    ...
+
 def main():
 
 
@@ -120,49 +175,10 @@ def main():
 
     logger.info(f"Reading White Matter {args.white_matter}")
     white_matter = itk.imread(args.white_matter, itk.F)
+ 
 
-    logger.info("Apply activation threshold")
-    image = itk_binary_threshold(image, upper_thr=1.1, lower_thr=args.activation_threshold)
-    logger.info("Identify all the unique lesions")
-    image = itk_cast(image.GetOutput(), itk.SS)
-    image = itk_connected_components(image.GetOutput(), fully_connected=True)
-    image = itk_relabel_components(image.GetOutput())
-
-    logger.info("Estimating Lesion Volume")
-    physical_size = image.GetSizeOfObjectsInPhysicalUnits()
-    number_of_voxels = image.GetSizeOfObjectsInPixels()
-    label_idxs = np.arange(1, image.GetNumberOfObjects() + 1)
-
-
+    df = run(image, white_matter=white_matter, exclusion_region=exclusion, activation_threshold=args.activation_threshold)
     # compute border image
-
-    border = image.GetOutput()
-
-    for i in label_idxs:
-        border = itk_binary_dilate(border, foreground_value=int(i))
-        border = border.GetOutput()
-
-    border = itk_subtract(border, image.GetOutput())
-
-    logger.info("Estimating White Matter Fraction")
-
-    wm_stats = itk_label_statistics(white_matter, border.GetOutput())
-    wm_fraction = [wm_stats.GetMean(int(i)) for i in label_idxs]
-    
-
-    logger.info("Estimating Exclusion Region Fraction")
-    ex_stats = itk_label_statistics(exclusion, image.GetOutput())
-    ex_fraction = [ex_stats.GetMean(int(i)) for i in label_idxs]
-    
-    logger.info("Creating the Features dataset")
-
-    df = pd.DataFrame(data={
-        "lesion_id": label_idxs,
-        "lesion_volume_mm3": physical_size,
-        "lesion_volume_vx": number_of_voxels,
-        "surrounding_wm_fraction": wm_fraction,
-        "exclusion_region_fraction": ex_fraction
-    })
 
     logger.info(f"Writing features to {args.output}")
     df.to_csv(args.output, sep=",", index=None)

@@ -26,13 +26,15 @@ def run(flair: itk.Image, model_list: List[str], logger=logging) -> itk.Image:
     logger.debug(f"Input tensor shape: {tensor.shape}")
     # for each model in list, segment and add the segmentation to the results
     results = []
+    sg.one_line_progress_meter("Perform Sagmentation", 0, len(model_list))
     for i, model in enumerate(model_list):
         logger.debug(f"Segmenting with {i + 1}-th model: {model}")
-        sg.one_line_progress_meter("Perform Sagmentation", i+1, len(model_list))
         sess = ort.InferenceSession( model, so, providers=EP_list)
         res = np.concatenate([sess.run([sess.get_outputs()[0].name], {sess.get_inputs()[0].name: tn[np.newaxis]})[0] for tn in tensor])
         logging.debug(f"{i+1}-th prediction tensor shape: {res.shape}")
         results.append(res)
+
+        sg.one_line_progress_meter("Perform Sagmentation", i + 1, len(model_list))
 
     results = np.asarray(results)
     logger.debug(f"Segmentation DONE, results shape is: {results.shape} -> Combininig activation maps by average")
